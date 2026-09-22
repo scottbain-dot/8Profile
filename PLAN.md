@@ -43,6 +43,12 @@ Status: **v1 deployed to the FIS Sheet and working for the owner account; profil
 - [ ] Share `PRIVACY.md` with the DP lead; record the answers to its six questions
 - [ ] Go-live: fill Students, share the `/exec` link
 
+### v1 + Lesson 1 — "Strengths & challenges" self-prediction  ✅ built
+- [x] `Predictions` tab (Email · Checkpoint · Timestamp · 13 × rating/freq), `savePrediction()` validates all 13 and upserts by verified email + checkpoint
+- [x] Predict view (traffic light + frequency per item, progress bar, save only when complete), summary view (strengths / work-ons), profile panel with chips + Edit, compare view stub reading prediction next to `combine` (null until v3)
+- [x] Re-opening is editable; saving again overwrites the intro row with a new timestamp
+- [ ] Align wording with `G8_Fitness_Lesson1_Deck.html` once it is shared
+
 ### v1.1 — polish once real students have used it
 - Vendor `html2canvas` → "Save my card" PNG (runs inside the school login; the file is the student's own)
 - Optional: embed Archivo/Inter as base64 WOFF2 in `Styles.html` so fonts need no third-party request
@@ -60,6 +66,7 @@ Status: **v1 deployed to the FIS Sheet and working for the owner account; profil
 - Combine tab: mile, push-ups, sit-to-stand, broad jump, 40 m sprint × Sept/Jan/May
 - Skills tab: 9 ladders × level (1–4) × checkpoint, with self → peer → teacher sign-off state
 - Report bands: Knowledge · Skills · Concept Transfer (best fit, 1–7) from the Rubric Bank map
+- Fill `combineFor_()` so the compare view shows prediction vs. measurement per item
 - Card radar from real data; "faint September self" ghost line
 
 ### v4 — tiers, badges, progress over time

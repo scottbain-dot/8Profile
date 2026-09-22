@@ -28,6 +28,9 @@ student's browser ──(FIS Google sign-in, by Google)──▶ Apps Script web
   (the Sheet owner) with access *Anyone within fis.edu*. Google does the sign-in; the
   script asks Google who the caller is. The browser never sends an email and never
   receives anyone else's row. Students need no access to the Sheet itself.
+- **Lesson 1 activity**: "Strengths & challenges" self-prediction (13 items × traffic light
+  + frequency) saved to a `Predictions` tab, one row per student per checkpoint, shown
+  back as a summary and later compared with Combine data (compare view is a stub).
 - **Frontend** served by `HtmlService` from the same script: `src/Index.html` (shell),
   `src/Styles.html` (CSS, the mockups' visual system), `src/App.html` (client JS).
 - **No third-party requests** by default: no CDN scripts, no analytics, no cookies beyond
@@ -106,7 +109,9 @@ synthetic (`example.edu`).
    simply see initials and nothing breaks.
 
 After code changes: `npm run check`, commit, paste the new `dist/Code.gs`, then
-Deploy → Manage deployments → edit → *New version*. The URL stays the same.
+Deploy → Manage deployments → edit → *New version*. The URL stays the same. If the
+update adds a tab (e.g. `Predictions`), it is created automatically on first save;
+running **PE Profile → 1. Set up tabs** again creates it up front.
 
 ### Troubleshooting
 

@@ -11,7 +11,8 @@
 //   Config    Key · Value · What it does
 //   Students  Email · Name · Class             the roster, teacher-maintained
 //   Teachers  Email · Name                     who gets the teacher view
-//   Profile   Email · Style · Goal · Updated   written by the app, one row per student
+//   Profile      Email · Style · Goal · Updated   written by the app, one row per student
+//   Predictions  Email · Checkpoint · Timestamp · 13 × (rating, freq)   one row per student per checkpoint
 //
 // Privacy rules baked in (PRIVACY.md is the reviewable version):
 //   • identity_() is the only place an email is read. It comes from Google, never the client.
@@ -21,11 +22,25 @@
 //     runtime only when photo_lookup is TRUE. Nothing is copied or stored.
 // =============================================================
 
+// Combine Intro self-prediction ("Strengths & Challenges", Lesson 1). Thirteen
+// items, each rated on two axes. Keys match the profile tiles and the Rubric Bank
+// ladders, so the compare view can line the prediction up with Combine data later.
+var PREDICT_ITEMS = ['cv', 'me', 'power', 'speed', 'throw', 'catch', 'strike', 'dribble', 'kick', 'balance', 'agility', 'jump', 'core'];
+var PREDICT_CHECKPOINTS = ['intro'];
+var RATINGS = ['strength', 'neutral', 'work-on'];
+var FREQS = ['often', 'sometimes', 'rarely'];
+function predictionHeaders_() {
+  var h = ['Email', 'Checkpoint', 'Timestamp'];
+  PREDICT_ITEMS.forEach(function (k) { h.push(k + '_rating'); h.push(k + '_freq'); });
+  return h;
+}
+
 var TABS = {
-  Config:   ['Key', 'Value', 'What it does'],
-  Students: ['Email', 'Name', 'Class'],
-  Teachers: ['Email', 'Name'],
-  Profile:  ['Email', 'Style', 'Goal', 'Updated']
+  Config:      ['Key', 'Value', 'What it does'],
+  Students:    ['Email', 'Name', 'Class'],
+  Teachers:    ['Email', 'Name'],
+  Profile:     ['Email', 'Style', 'Goal', 'Updated'],
+  Predictions: predictionHeaders_()
 };
 var PROFILE_KEY = 'Email';
 
@@ -206,6 +221,25 @@ function profileRow_(email) {
   return readTab_('Profile').filter(function (r) { return lower_(r[PROFILE_KEY]) === email; })[0] || null;
 }
 
+// The caller's predictions, by checkpoint: { intro: { timestamp, items: { cv: { rating, freq }, ... } } }
+function predictionsFor_(email) {
+  var out = {};
+  readTab_('Predictions').forEach(function (r) {
+    if (lower_(r.Email) !== email) return;
+    var cp = lower_(r.Checkpoint); if (PREDICT_CHECKPOINTS.indexOf(cp) === -1) return;
+    var items = {};
+    PREDICT_ITEMS.forEach(function (k) {
+      var rating = lower_(r[k + '_rating']), freq = lower_(r[k + '_freq']);
+      if (RATINGS.indexOf(rating) !== -1 && FREQS.indexOf(freq) !== -1) items[k] = { rating: rating, freq: freq };
+    });
+    out[cp] = { timestamp: str_(r.Timestamp), items: items };
+  });
+  return out;
+}
+// v3: the caller's Combine measurements, keyed like PREDICT_ITEMS. Nothing is
+// collected yet, so the compare view shows "not yet measured".
+function combineFor_(email) { return null; }
+
 // Everything the page needs, for the caller only.
 function bootstrap() {
   var cfg = config_();
@@ -225,8 +259,11 @@ function bootstrap() {
       initials: nm.initials,
       style: STYLES[str_(p.Style)] ? str_(p.Style) : '',
       goal: str_(p.Goal),
-      photoUrl: photoUrl_(cfg, id.email)
+      photoUrl: photoUrl_(cfg, id.email),
+      predictions: predictionsFor_(id.email),
+      combine: combineFor_(id.email)
     };
+    out.predict = { items: PREDICT_ITEMS, checkpoints: PREDICT_CHECKPOINTS, ratings: RATINGS, freqs: FREQS };
     if (id.teacher) out.alsoTeacher = true;
   } else if (id.role === 'teacher' || id.role === 'unknown') {
     out.email = id.email; // the caller's own address, so they can see which account they used
@@ -235,26 +272,34 @@ function bootstrap() {
 }
 
 // ---------- Writes (always for the caller's own row) ----------
-function upsertProfile_(email, fields) {
+// Insert-or-update one row of `name`, matched on the `keys` columns (case-insensitive),
+// under a script lock. Columns not in `fields` keep their value.
+function upsert_(name, keys, fields) {
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    var s = ensureTab_('Profile', TABS.Profile);
+    var s = ensureTab_(name, TABS[name]);
     var lastRow = s.getLastRow(), lastCol = s.getLastColumn();
     var headers = s.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
-    var keyCol = headers.indexOf(PROFILE_KEY);
+    var keyCols = Object.keys(keys).map(function (k) { return headers.indexOf(k); });
     var rowIdx = -1;
     if (lastRow > 1) {
-      var keys = s.getRange(2, keyCol + 1, lastRow - 1, 1).getValues();
-      for (var i = 0; i < keys.length; i++) if (lower_(keys[i][0]) === email) { rowIdx = i + 2; break; }
+      var data = s.getRange(2, 1, lastRow - 1, lastCol).getValues();
+      for (var i = 0; i < data.length && rowIdx === -1; i++) {
+        var hit = Object.keys(keys).every(function (k, j) { return lower_(data[i][keyCols[j]]) === lower_(keys[k]); });
+        if (hit) rowIdx = i + 2;
+      }
     }
     var row;
-    if (rowIdx === -1) { rowIdx = lastRow + 1; row = headers.map(function () { return ''; }); row[keyCol] = email; }
+    if (rowIdx === -1) { rowIdx = lastRow + 1; row = headers.map(function () { return ''; }); Object.keys(keys).forEach(function (k, j) { row[keyCols[j]] = keys[k]; }); }
     else row = s.getRange(rowIdx, 1, 1, lastCol).getValues()[0];
     Object.keys(fields).forEach(function (k) { var c = headers.indexOf(k); if (c !== -1) row[c] = fields[k]; });
-    var u = headers.indexOf('Updated'); if (u !== -1) row[u] = new Date();
     s.getRange(rowIdx, 1, 1, lastCol).setValues([row]);
   } finally { lock.releaseLock(); }
+}
+function upsertProfile_(email, fields) {
+  fields.Updated = new Date();
+  upsert_('Profile', { Email: email }, fields);
 }
 
 function saveStyle(style) {
@@ -275,13 +320,35 @@ function saveGoal(goal) {
   return { ok: true, goal: clean };
 }
 
+// Save the caller's self-prediction for one checkpoint. `answers` is
+// { cv: { rating, freq }, ... } and must cover all 13 items with valid values.
+// One row per student per checkpoint: saving again overwrites it.
+function savePrediction(checkpoint, answers) {
+  var cfg = config_();
+  var id = requireStudent_(cfg);
+  var cp = lower_(checkpoint);
+  if (PREDICT_CHECKPOINTS.indexOf(cp) === -1) throw new Error('Unknown checkpoint');
+  if (!answers || typeof answers !== 'object') throw new Error('Missing answers');
+  var fields = { Timestamp: new Date() };
+  var missing = [];
+  PREDICT_ITEMS.forEach(function (k) {
+    var a = answers[k] || {};
+    var rating = lower_(a.rating), freq = lower_(a.freq);
+    if (RATINGS.indexOf(rating) === -1 || FREQS.indexOf(freq) === -1) { missing.push(k); return; }
+    fields[k + '_rating'] = rating; fields[k + '_freq'] = freq;
+  });
+  if (missing.length) throw new Error('Incomplete: rate every item before saving (' + missing.length + ' left)');
+  upsert_('Predictions', { Email: id.email, Checkpoint: cp }, fields);
+  return { ok: true, checkpoint: cp, prediction: predictionsFor_(id.email)[cp] };
+}
+
 // ---------- Sheet menu (teacher, inside the Sheet) ----------
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('PE Profile')
     .addItem('1. Set up tabs', 'setupTabs')
     .addItem('Clear config cache', 'clearConfigCache')
     .addSeparator()
-    .addItem('End of year: clear Profile data…', 'clearProfileData')
+    .addItem('End of year: clear student data…', 'clearProfileData')
     .addToUi();
 }
 
@@ -298,12 +365,14 @@ function setupTabs() {
   try { SpreadsheetApp.getUi().alert('Tabs are ready. Fill Students (Email · Name · Class), then Deploy → New deployment → Web app: Execute as Me, access Anyone within the school.'); } catch (e) { /* no UI when run headless */ }
 }
 
-// Retention: wipes every student-written row (styles, goals). Roster is untouched.
+// Retention: wipes every student-written row (styles, goals, predictions). Roster is untouched.
 function clearProfileData() {
   var ui = SpreadsheetApp.getUi();
-  var ans = ui.alert('Clear all Profile rows?', 'This deletes every student\'s saved style and goal. The Students tab is not touched. Continue?', ui.ButtonSet.YES_NO);
+  var ans = ui.alert('Clear all student data?', 'This deletes every student\'s saved style, goal and self-predictions (Profile and Predictions tabs). The Students tab is not touched. Continue?', ui.ButtonSet.YES_NO);
   if (ans !== ui.Button.YES) return;
-  var s = ensureTab_('Profile', TABS.Profile);
-  if (s.getLastRow() > 1) s.getRange(2, 1, s.getLastRow() - 1, s.getLastColumn()).clearContent();
-  ui.alert('Profile data cleared.');
+  ['Profile', 'Predictions'].forEach(function (n) {
+    var s = ensureTab_(n, TABS[n]);
+    if (s.getLastRow() > 1) s.getRange(2, 1, s.getLastRow() - 1, s.getLastColumn()).clearContent();
+  });
+  ui.alert('Student data cleared.');
 }

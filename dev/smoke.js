@@ -38,6 +38,43 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   await page.keyboard.press('Escape');
   await page.screenshot({ path: path.join(shots, 'profile.png'), fullPage: true });
 
+  // Lesson 1 prediction, from the profile panel
+  check('profile shows the Lesson 1 call to action', (await page.textContent('.goals.l1')).includes('Predict my strengths'));
+  await page.click('#topredict');
+  await page.waitForSelector('.pitem');
+  check('13 items to rate', (await page.$$('.pitem')).length === 13);
+  check('save disabled until complete', await page.$eval('#psave', b => b.disabled));
+  await page.click('.tl[data-k="cv"][data-rating="strength"]');
+  await page.click('.fq[data-k="cv"][data-freq="often"]');
+  check('progress counts a completed item', (await page.textContent('#pdone')) === '1');
+  check('item marked done', await page.$eval('#pi-cv', el => el.classList.contains('done')));
+  const items = ['me', 'power', 'speed', 'throw', 'catch', 'strike', 'dribble', 'kick', 'balance', 'agility', 'jump', 'core'];
+  for (let i = 0; i < items.length; i++) {
+    const r = ['strength', 'neutral', 'work-on'][i % 3], f = ['often', 'sometimes', 'rarely'][i % 3];
+    await page.click('.tl[data-k="' + items[i] + '"][data-rating="' + r + '"]');
+    await page.click('.fq[data-k="' + items[i] + '"][data-freq="' + f + '"]');
+  }
+  check('13 of 13 enables save', !(await page.$eval('#psave', b => b.disabled)));
+  await page.screenshot({ path: path.join(shots, 'predict.png'), fullPage: true });
+  await page.click('#psave');
+  await page.waitForSelector('.sumhero');
+  check('summary lists strengths and work-ons', (await page.$$('.sumcard.g .slist li')).length === 5 && (await page.$$('.sumcard.r .slist li')).length === 4);
+  await page.screenshot({ path: path.join(shots, 'summary.png'), fullPage: true });
+  await page.click('#toprofile');
+  await page.waitForSelector('.goals.l1');
+  check('profile panel now shows the prediction with chips', (await page.$$('.goals.l1 .chip.g')).length === 5);
+  await page.click('#tocompare');
+  await page.waitForSelector('.crowi');
+  check('compare stub: 13 rows, Combine pending', (await page.$$('.crowi')).length === 13 && (await page.$$('.crowi .pending')).length === 13);
+  await page.screenshot({ path: path.join(shots, 'compare.png'), fullPage: true });
+  await page.click('#toprofile'); await page.waitForSelector('.goals.l1');
+  await page.click('#topredict'); await page.waitForSelector('.pitem');
+  check('re-opening pre-fills the saved picks', (await page.$$('.tl.on')).length === 13 && (await page.$$('.fq.on')).length === 13 && !(await page.$eval('#psave', b => b.disabled)));
+  await page.click('.tl[data-k="cv"][data-rating="work-on"]');
+  await page.click('#psave');
+  await page.waitForSelector('.sumhero');
+  check('edit re-saves (strength moved to work-on)', (await page.$$('.sumcard.r .slist li')).length === 5);
+
   // Return visit with a style → straight to the profile
   await page.goto(url('role=student').replace('reset=1&', ''));
   await page.waitForSelector('.cardteaser');
@@ -50,6 +87,7 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   await page.waitForSelector('.cardteaser');
   check('"Last, First" roster name → first name only', (await page.textContent('.ct-name')).trim().startsWith('Sample ') && !(await page.textContent('.ct-name')).includes('Two'));
   check('another student has their own choice', (await page.textContent('.ct-arch')).includes('THE IMPROVER'));
+  check('another student sees their own seeded prediction', (await page.$$('.goals.l1 .chip')).length >= 8);
 
   await page.goto(url('role=student&photo=1').replace('reset=1&', ''));
   await page.waitForSelector('.ct-av img');
@@ -74,6 +112,10 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   await page.waitForSelector('.cardteaser');
   check('no horizontal scroll on phone', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   await page.screenshot({ path: path.join(shots, 'profile-phone.png'), fullPage: true });
+  await page.click('#topredict'); await page.waitForSelector('.pitem');
+  check('no horizontal scroll on phone (predict)', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  await page.screenshot({ path: path.join(shots, 'predict-phone.png'), fullPage: false });
+  await page.click('#toprofile'); await page.waitForSelector('.cardteaser');
   await page.click('#tocard'); await page.waitForSelector('.sbtn');
   check('no horizontal scroll on phone (card)', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
   await page.screenshot({ path: path.join(shots, 'card-phone.png'), fullPage: true });

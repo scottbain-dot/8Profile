@@ -81,6 +81,33 @@ const D = {
   'rp-ct':    { e: '🔄', t: 'Concept transfer', m: 'Using what you know in new sports & situations', what: 'Best fit across: Tactics Cup transfer (C2), meaningful participation (C1), health decisions (C3).', when: 'Reported on Canvas, 1–7.' }
 };
 
+// ═══════════════ Combine Intro: strengths & challenges self-prediction ═══════════════
+const ITEMS = [
+  { k: 'cv',      g: 'fit',  e: '🫀', t: 'Cardiovascular endurance', s: 'keep going: the mile' },
+  { k: 'me',      g: 'fit',  e: '💪', t: 'Muscular endurance',       s: 'push-ups · sit-to-stand' },
+  { k: 'power',   g: 'fit',  e: '💥', t: 'Power',                    s: 'explode: broad jump' },
+  { k: 'speed',   g: 'fit',  e: '⚡', t: 'Speed',                    s: 'quick: 40 m sprint' },
+  { k: 'throw',   g: 'fund', e: '🎯', t: 'Throw',                    s: 'aim, distance, on the move' },
+  { k: 'catch',   g: 'fund', e: '🧤', t: 'Catch',                    s: 'safe hands, under pressure' },
+  { k: 'strike',  g: 'fund', e: '🏏', t: 'Strike',                   s: 'bat, racket, hand' },
+  { k: 'dribble', g: 'fund', e: '⛹️', t: 'Dribble',                  s: 'hands or feet, head up' },
+  { k: 'kick',    g: 'fund', e: '⚽', t: 'Kick',                     s: 'accuracy, both feet' },
+  { k: 'balance', g: 'fund', e: '🤸', t: 'Balance',                  s: 'still and moving' },
+  { k: 'agility', g: 'fund', e: '🏃', t: 'Agility',                  s: 'change direction fast' },
+  { k: 'jump',    g: 'fund', e: '⬆️', t: 'Jump & land',              s: 'take off, land in control' },
+  { k: 'core',    g: 'fund', e: '🧱', t: 'Core stability',           s: 'plank, hold your shape' }
+];
+const RATING = { strength: { e: '🟢', t: 'Strength' }, neutral: { e: '🟡', t: 'Neutral' }, 'work-on': { e: '🔴', t: 'Challenge' } };
+const FREQ = { often: 'I do this often', sometimes: 'I do this sometimes', rarely: 'I do this rarely' };
+const CP = 'intro';
+let draft = {}; // { cv: { rating, freq }, ... } while rating
+function predictionSaved() { return (state.student.predictions || {})[CP] || null; }
+function draftDone() { return ITEMS.filter(i => draft[i.k] && draft[i.k].rating && draft[i.k].freq).length; }
+function lists(pred) {
+  const by = r => ITEMS.filter(i => pred.items[i.k] && pred.items[i.k].rating === r);
+  return { strengths: by('strength'), neutral: by('neutral'), workons: by('work-on') };
+}
+
 // ═══════════════ views ═══════════════
 let state = null, view = 'profile';
 
@@ -111,7 +138,7 @@ function profileView(b) {
       '<div class="ct-stats"><div><b>—</b><span>Mile</span></div><div><b>—</b><span>Skills</span></div><div><b>—</b><span>Effort</span></div></div>' +
       '<button type="button" class="ct-btn' + (k ? '' : ' pulse') + '" id="tocard">' + (k ? 'View my card ↗' : 'Build my card ↗') + '</button>' +
     '</div>' +
-    '<div class="goals"><div class="hd">⭐ Working towards</div><div class="empty">Your goals for fitness, skills and participation appear here after the September Combine.</div></div>' +
+    lesson1Panel() +
     '<h3 class="sec sec-glance"><span class="em">👀</span> At a glance <span class="tap">· tap to open</span></h3><p class="seclede">The whole picture in one look — position, not scores.</p>' +
     '<div class="grid4">' + tile('a-fit', 'gl-fit', '🏃', 'Fitness', 'from September', 'at the Combine') + tile('a-fund', 'gl-fund', '🧩', 'Fundamental skills', '9 building blocks', 'Level 1 to 4') + tile('a-ap', 'gl-ap', '🤝', 'Participation', 'all year', 'your five keys') + tile('a-skill', 'gl-know', '🧠', 'Understanding', 'use it in new games', 'Tactics Cup') + '</div>' +
     '<h3 class="sec sec-fit"><span class="em">🏃</span> My fitness <span class="tap">· tap a part</span></h3><p class="seclede">Physical capacities — measured three times a year. Records that move.</p>' +
@@ -127,6 +154,70 @@ function profileView(b) {
     '<div class="grid3">' + band('rp-know', '🧠', 'Knowledge') + band('rp-skill', '🎯', 'Skills') + band('rp-ct', '🔄', 'Concept transfer') + '</div>' +
     '<div class="foot"><span class="arrow">↻</span><div><b>How this grows:</b> September sets the baseline; the same measures repeat in January and May. Always <b>you vs. your past self</b> — and it maps straight to your report.</div></div>' +
     (b.alsoTeacher ? '<p class="small">You are on the Teachers tab too, so this is what a student sees.</p>' : '') +
+  '</div>';
+}
+
+function lesson1Panel() {
+  const pred = predictionSaved();
+  if (!pred) {
+    return '<div class="goals l1"><div class="hd">🔮 Lesson 1 · Strengths &amp; challenges</div><div class="empty">Before the Combine measures anything, predict where you’re strong and what you’ll work on. Two minutes, no wrong answers.</div>' +
+      '<button type="button" class="ct-btn pulse l1btn" id="topredict">Predict my strengths &amp; challenges ↗</button></div>';
+  }
+  const L = lists(pred);
+  const chips = (arr, cls) => arr.length ? arr.map(i => '<span class="chip ' + cls + '">' + i.e + ' ' + esc(i.t) + '</span>').join('') : '<span class="chip none">none picked</span>';
+  return '<div class="goals l1"><div class="hd">🔮 My prediction <span class="tap">· Lesson 1 · ' + esc(pred.timestamp.slice(0, 10)) + '</span></div>' +
+    '<div class="l1row"><b>🟢 Strengths</b><div class="chips">' + chips(L.strengths, 'g') + '</div></div>' +
+    '<div class="l1row"><b>🔴 Work-ons</b><div class="chips">' + chips(L.workons, 'r') + '</div></div>' +
+    '<div class="l1acts"><button type="button" class="lnk" id="topredict">Edit my prediction</button><button type="button" class="lnk" id="tocompare">Compare with my Combine results ›</button></div></div>';
+}
+
+function predictView(b) {
+  const st = b.student;
+  const row = i => {
+    const d = draft[i.k] || {};
+    const tl = Object.keys(RATING).map(r => '<button type="button" class="tl ' + r + (d.rating === r ? ' on' : '') + '" data-k="' + i.k + '" data-rating="' + r + '" aria-pressed="' + (d.rating === r) + '"><span>' + RATING[r].e + '</span>' + RATING[r].t + '</button>').join('');
+    const fq = Object.keys(FREQ).map(f => '<button type="button" class="fq' + (d.freq === f ? ' on' : '') + '" data-k="' + i.k + '" data-freq="' + f + '" aria-pressed="' + (d.freq === f) + '">' + FREQ[f] + '</button>').join('');
+    return '<div class="pitem a-' + i.g + (d.rating && d.freq ? ' done' : '') + '" id="pi-' + i.k + '"><div class="pihead"><span class="em">' + i.e + '</span><div><div class="pt">' + esc(i.t) + '</div><div class="ps">' + esc(i.s) + '</div></div><span class="tick">✓</span></div>' +
+      '<div class="tls">' + tl + '</div><div class="fqs">' + fq + '</div></div>';
+  };
+  const group = (g, em, title, lede) => '<h3 class="sec sec-' + g + '"><span class="em">' + em + '</span> ' + title + '</h3><p class="seclede">' + lede + '</p>' + ITEMS.filter(i => i.g === g).map(row).join('');
+  return '<div class="wrap predict">' +
+    '<button type="button" class="back light" id="toprofile">← Back to my profile</button>' +
+    '<div class="phero"><div class="k">LESSON 1 · COMBINE INTRO</div><h1>Strengths &amp; challenges</h1><p>Hi ' + esc(st.first) + '. This is your prediction. The Combine gives you the real data later, and we’ll see how well you knew yourself. It’s you vs. your past self, never a ranking.</p>' +
+    '<div class="legend"><span>🟢 Strength</span><span>🟡 Neutral</span><span>🔴 Challenge</span><span class="sep">·</span><span>then how often you do it</span></div></div>' +
+    group('fit', '🏃', 'Fitness', 'Four physical capacities the Combine measures.') +
+    group('fund', '🧩', 'Fundamental skills', 'Nine building blocks, each a ladder you climb this year.') +
+    '<div class="pbar"><div class="pcount"><b id="pdone">' + draftDone() + '</b> of ' + ITEMS.length + '<div class="ptrack"><i id="pfill" style="width:' + Math.round(100 * draftDone() / ITEMS.length) + '%"></i></div></div>' +
+      '<button type="button" class="ct-btn" id="psave"' + (draftDone() === ITEMS.length ? '' : ' disabled') + '>' + (predictionSaved() ? 'Save changes' : 'Save my prediction') + '</button></div>' +
+  '</div>';
+}
+
+function summaryView(b) {
+  const pred = predictionSaved(), L = lists(pred);
+  const list = (arr, empty) => arr.length ? '<ul class="slist">' + arr.map(i => '<li><span class="em">' + i.e + '</span><b>' + esc(i.t) + '</b><span class="sf">' + esc(FREQ[pred.items[i.k].freq]) + '</span></li>').join('') + '</ul>' : '<p class="empty">' + empty + '</p>';
+  return '<div class="wrap">' +
+    '<div class="sumhero"><div class="k">LESSON 1 · SAVED ✓</div><h1>Here’s your picture, ' + esc(b.student.first) + '</h1><p>' + L.strengths.length + ' strengths · ' + L.neutral.length + ' neutral · ' + L.workons.length + ' to work on. Nobody else sees this. We’ll compare it to your real Combine results, and the interesting part is where you surprise yourself.</p></div>' +
+    '<div class="sumgrid"><div class="sumcard g"><h3>🟢 My predicted strengths</h3>' + list(L.strengths, 'You didn’t pick any strengths yet. The Combine might find some for you.') + '</div>' +
+    '<div class="sumcard r"><h3>🔴 My work-ons</h3>' + list(L.workons, 'No challenges picked. Bold. The Combine will have a say.') + '</div></div>' +
+    '<div class="sumnote">↻ <b>What happens next:</b> at the September Combine you measure all thirteen for real. Then your profile lines your prediction up against your numbers.</div>' +
+    '<div class="sumacts"><button type="button" class="ct-btn" id="toprofile">Back to my profile ↗</button><button type="button" class="lnk" id="topredict">Edit my prediction</button></div>' +
+  '</div>';
+}
+
+// v3 stub: prediction next to Combine measurements. Combine data is null until the
+// Combine tab exists; the layout is final so v3 only has to fill the right column.
+function compareView(b) {
+  const pred = predictionSaved(), combine = b.student.combine || {};
+  const rows = ITEMS.map(i => {
+    const p = pred && pred.items[i.k], c = combine[i.k];
+    return '<div class="crowi a-' + i.g + '"><span class="em">' + i.e + '</span><div class="ct"><b>' + esc(i.t) + '</b><span>' + (p ? RATING[p.rating].e + ' ' + RATING[p.rating].t + ' · ' + esc(FREQ[p.freq]) : 'no prediction') + '</span></div>' +
+      '<div class="cv">' + (c ? esc(String(c)) : '<span class="pending">not yet measured</span>') + '</div></div>';
+  }).join('');
+  return '<div class="wrap">' +
+    '<button type="button" class="back light" id="toprofile">← Back to my profile</button>' +
+    '<div class="phero"><div class="k">PREDICTION vs. COMBINE</div><h1>How well did you know yourself?</h1><p>Left: what you predicted in Lesson 1. Right: what the Combine measured. Right now the Combine hasn’t happened, so the right side is waiting.</p></div>' +
+    '<div class="chead"><span>Item</span><span>My prediction</span><span>Combine</span></div>' + rows +
+    (pred ? '' : '<p class="empty" style="margin-top:14px">You haven’t made a prediction yet. <button type="button" class="lnk" id="topredict">Make it now</button></p>') +
   '</div>';
 }
 
@@ -218,12 +309,43 @@ async function choose(k) {
   } finally { document.querySelectorAll('.sbtn').forEach(b => b.disabled = false); }
 }
 
+function pick(k, field, val) {
+  draft[k] = Object.assign({}, draft[k], { [field]: val });
+  const item = $('#pi-' + k);
+  item.querySelectorAll(field === 'rating' ? '.tl' : '.fq').forEach(b => { const on = b.dataset[field] === val; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  const d = draft[k]; item.classList.toggle('done', !!(d.rating && d.freq));
+  const n = draftDone(); $('#pdone').textContent = n; $('#pfill').style.width = Math.round(100 * n / ITEMS.length) + '%';
+  $('#psave').disabled = n !== ITEMS.length;
+  // nudge to the next unrated item on small screens
+  if (d.rating && d.freq) { const next = ITEMS.find(i => !(draft[i.k] && draft[i.k].rating && draft[i.k].freq)); if (next && window.innerWidth < 760) { const el = $('#pi-' + next.k); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }
+}
+async function savePrediction() {
+  const btn = $('#psave'); btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await call('savePrediction', CP, draft);
+    state.student.predictions = Object.assign({}, state.student.predictions, { [CP]: res.prediction });
+    show('summary');
+  } catch (e) { btn.disabled = false; btn.textContent = 'Save my prediction'; toast('Couldn’t save: ' + e.message, true); }
+}
+const wire = (id, fn) => { const el = $('#' + id); if (el) el.addEventListener('click', fn); };
+
 function show(v) {
   view = v;
   const app = $('#app');
   document.body.classList.toggle('dark', v === 'card');
   setSkin(state.student.style);
-  if (v === 'card') {
+  if (v === 'predict') {
+    const saved = predictionSaved(); draft = saved ? JSON.parse(JSON.stringify(saved.items)) : {};
+    app.innerHTML = predictView(state);
+    app.addEventListener('click', e => { const t = e.target.closest('.tl,.fq'); if (!t) return; if (t.dataset.rating) pick(t.dataset.k, 'rating', t.dataset.rating); else pick(t.dataset.k, 'freq', t.dataset.freq); });
+    wire('psave', savePrediction); wire('toprofile', () => show('profile'));
+  } else if (v === 'summary') {
+    app.innerHTML = summaryView(state);
+    wire('toprofile', () => show('profile')); wire('topredict', () => show('predict'));
+  } else if (v === 'compare') {
+    app.innerHTML = compareView(state);
+    wire('toprofile', () => show('profile')); wire('topredict', () => show('predict'));
+  } else if (v === 'card') {
     app.innerHTML = cardView(state);
     $('#styles').addEventListener('click', e => { const btn = e.target.closest('.sbtn'); if (btn) choose(btn.dataset.k); });
     $('#toprofile').addEventListener('click', () => show('profile'));
@@ -231,6 +353,7 @@ function show(v) {
   } else {
     app.innerHTML = profileView(state);
     $('#tocard').addEventListener('click', () => show('card'));
+    wire('topredict', () => show('predict')); wire('tocompare', () => show('compare'));
     app.addEventListener('click', e => { const t = e.target.closest('[data-ov]'); if (t) openOv(t.dataset.ov); });
   }
   window.scrollTo(0, 0);

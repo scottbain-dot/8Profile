@@ -143,6 +143,56 @@ h3.sec .em{font-size:16px;width:31px;height:31px;border-radius:9px;display:inlin
 .done{margin-top:34px;text-align:center}
 .done .ct-btn{margin:0}
 
+/* ── Lesson 1: strengths & challenges ───────────────────────────── */
+.goals.l1 .l1btn{display:inline-block;margin:12px 0 2px}
+.l1row{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}.l1row:first-of-type{border-top:none}
+.l1row b{font-family:var(--disp);font-size:12px;flex:none;width:96px;padding-top:3px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;border-radius:999px;padding:3px 10px;background:var(--paper);border:1px solid var(--line)}
+.chip.g{background:#e6f6ec;border-color:#bfe6cd}.chip.r{background:#fde8e8;border-color:#f3c2c2}.chip.none{color:var(--muted)}
+.l1acts{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
+.lnk{background:none;border:none;color:var(--maroon);font-weight:600;font-size:13px;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+.back.light{color:var(--ink-soft);border-color:var(--line);background:#fff}.back.light:hover{color:var(--ink)}
+.phero{margin:14px 0 4px}.phero .k,.sumhero .k{font-family:var(--disp);font-weight:700;letter-spacing:.18em;font-size:12px;color:var(--maroon)}
+.phero h1,.sumhero h1{font-family:var(--disp);font-weight:800;font-size:clamp(26px,4.5vw,40px);margin:4px 0 6px;line-height:1.05}
+.phero p,.sumhero p{color:var(--ink-soft);font-size:14px;max-width:60ch;margin:0 0 10px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);font-family:var(--disp);font-weight:600}.legend .sep{color:var(--muted)}
+.predict{padding-bottom:110px}
+.pitem{background:#fff;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;transition:.15s}
+.pitem.a-fit{border-left-color:var(--fit)}.pitem.a-fund{border-left-color:var(--fund)}
+.pitem.done{background:#fbfaf9}.pitem .tick{margin-left:auto;font-family:var(--disp);font-weight:700;color:var(--ap);opacity:0;transition:.15s}.pitem.done .tick{opacity:1}
+.pihead{display:flex;align-items:center;gap:10px;margin-bottom:9px}.pihead .em{font-size:22px}.pt{font-weight:600;font-size:14.5px}.ps{font-size:11.5px;color:var(--muted)}
+.tls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.tl{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;font-family:var(--disp);font-weight:700;font-size:12.5px;cursor:pointer;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;gap:5px;min-height:40px}
+.tl span{font-size:15px}
+.tl.strength.on{background:#e6f6ec;border-color:#1f9d57;color:#0f7a41}.tl.neutral.on{background:#fff6dc;border-color:#e0a100;color:#7a5600}.tl.work-on.on{background:#fde8e8;border-color:#d64545;color:#8f1f1f}
+.tl:focus-visible,.fq:focus-visible{outline:2px solid var(--maroon);outline-offset:2px}
+.fqs{display:flex;gap:6px;flex-wrap:wrap}
+.fq{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--ink-soft)}
+.fq.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;gap:16px;z-index:40;box-shadow:0 -6px 20px rgba(0,0,0,.06)}
+.pbar .pcount{flex:1;font-family:var(--disp);font-weight:600;font-size:14px;color:var(--ink-soft)}.pbar .pcount b{font-size:20px;color:var(--ink)}
+.ptrack{height:6px;border-radius:3px;background:#ece7e6;margin-top:5px;max-width:320px}.ptrack i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--fit),var(--fund));transition:width .2s}
+.pbar .ct-btn{margin:0}.pbar .ct-btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.sumhero{margin:20px 0 16px}
+.sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.sumgrid{grid-template-columns:1fr}}
+.sumcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;border-top:4px solid var(--line)}
+.sumcard.g{border-top-color:#1f9d57}.sumcard.r{border-top-color:#d64545}
+.sumcard h3{font-family:var(--disp);font-weight:700;font-size:17px;margin:0 0 8px}
+.slist{list-style:none;margin:0;padding:0}.slist li{display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}.slist li:first-child{border-top:none}
+.slist .em{font-size:18px}.slist .sf{margin-left:auto;font-size:11.5px;color:var(--muted)}
+.sumcard .empty{font-size:13px;color:var(--muted);margin:0}
+.sumnote{margin-top:14px;background:var(--maroon-t);border-left:3px solid var(--maroon);border-radius:0 12px 12px 0;padding:12px 16px;font-size:13px;color:var(--ink-soft)}.sumnote b{color:var(--maroon)}
+.sumacts{display:flex;gap:18px;align-items:center;margin-top:18px;flex-wrap:wrap}.sumacts .ct-btn{margin:0}
+.chead,.crowi{display:grid;grid-template-columns:28px 1fr 150px;gap:10px;align-items:center}
+.chead{font-family:var(--disp);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;padding:6px 14px;grid-template-columns:1fr 1fr 150px}
+.chead span:first-child{display:none}
+.crowi{background:#fff;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;padding:9px 14px;margin-bottom:6px}
+.crowi.a-fit{border-left-color:var(--fit)}.crowi.a-fund{border-left-color:var(--fund)}
+.crowi .em{font-size:18px}.crowi .ct b{display:block;font-size:13.5px}.crowi .ct span{font-size:12px;color:var(--ink-soft)}
+.crowi .cv{font-family:var(--disp);font-weight:700;text-align:right}.pending{font-size:11.5px;color:var(--muted);font-weight:500}
+@media(max-width:520px){.chead,.crowi{grid-template-columns:28px 1fr}.chead{grid-template-columns:1fr}.chead span:last-child{display:none}.crowi .cv{grid-column:2;text-align:left}}
+
 /* ── messages for non-student states ────────────────────────────── */
 .msg{max-width:520px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 28px;text-align:center}
 .msg .big{font-size:38px}

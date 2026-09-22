@@ -42,6 +42,8 @@
     clearConfigCache();
     FakeSheets.user = 'sample.two@example.edu';
     saveStyle('improver'); // one student has already chosen
+    const ans = {}; PREDICT_ITEMS.forEach((k, i) => { ans[k] = { rating: RATINGS[i % 3], freq: FREQS[(i + 1) % 3] }; });
+    savePrediction('intro', ans); // ...and made their Lesson 1 prediction
   }
   if (!FakeSheets.book.getSheetByName('Students')) seed();
   FakeSheets.owner = 'teacher@example.edu';
@@ -65,7 +67,7 @@
     cfg.getDataRange().getValues().forEach((r, i) => { if (r[0] === 'photo_lookup') cfg.getRange(i + 1, 2).setValues([['TRUE']]); });
   }
 
-  const SERVER_FNS = ['bootstrap', 'saveStyle', 'saveGoal'];
+  const SERVER_FNS = ['bootstrap', 'saveStyle', 'saveGoal', 'savePrediction'];
   const isWrite = fn => /^save/.test(fn);
   function makeRunner() {
     const r = { _ok: null, _err: null };

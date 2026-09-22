@@ -25,6 +25,7 @@ minors under GDPR, so it is built to keep everything inside the FIS Google Works
 | Students | Email, Name, Class | Existing PE roster, entered by the teacher | Recognise the signed-in student and greet them |
 | Teachers | Email, Name | Teacher | Show the teacher screen instead of a student profile |
 | Profile | Email, Style (one of six labels), Goal (≤140 chars, optional, own words), Updated | Written by the student through the app | Persist the student's chosen PE Style / goal |
+| Predictions | Email, Checkpoint (`intro`), Timestamp, and for each of 13 fitness/skill items a rating (strength · neutral · work-on) and a frequency (often · sometimes · rarely) | Entered by the student in the Lesson 1 "Strengths & challenges" activity | The student's own prediction, shown back to them and later lined up against their Combine results. **New data created by the app** (self-perception, low sensitivity), one row per student per checkpoint, no free text |
 | Config | key/value settings | Teacher | No personal data |
 
 Later phases add data already collected in PE (Active Participation bands, Combine
@@ -44,8 +45,10 @@ already held by the school).
 3. **Read.** `bootstrap()` matches the address against the Students tab and returns that
    one row plus that student's Profile row. No function returns the roster or any other
    student's data. The response does not even contain the student's own email.
-4. **Write.** `saveStyle()` / `saveGoal()` validate the value and upsert one Profile row
-   keyed by the *server-verified* address. The client cannot choose whose row is written.
+4. **Write.** `saveStyle()` / `saveGoal()` / `savePrediction()` validate the values and
+   upsert one row keyed by the *server-verified* address (plus checkpoint for
+   predictions). The client cannot choose whose row is written; an incomplete or
+   malformed prediction is rejected whole.
 5. **Photo (optional, off by default).** With Config `photo_lookup` = TRUE and the People
    API service enabled, the server looks up the student's own Google directory photo and
    returns its URL. The browser loads the image straight from Google. Nothing is copied,
@@ -80,8 +83,8 @@ need no access to the Sheet.
 
 ## Retention & deletion
 
-- Profile rows (style, goal) are the only app-written data. The Sheet menu
-  **PE Profile → End of year: clear Profile data…** deletes them all. Proposed retention:
+- Profile rows (style, goal) and Predictions rows are the only app-written data. The
+  Sheet menu **PE Profile → End of year: clear student data…** deletes them all. Proposed retention:
   delete at the end of each school year. **To be confirmed by the DP lead.**
 - Students and Teachers tabs are the school's existing roster data; retention follows the
   school's roster policy.
@@ -102,7 +105,11 @@ need no access to the Sheet.
 5. **Teacher accounts.** Teachers see only a teacher screen in v1. Later phases may add a
    teacher "view a student's profile" function; that is a new access path and should be
    reviewed when designed.
-6. **Later phases** (AP, Combine, skill levels, report bands) widen the data displayed.
+6. **Self-prediction data.** The Lesson 1 activity is the first thing the app *creates*
+   rather than displays: a student's own opinion of their strengths and challenges. It
+   is shown only to that student (and, in the Sheet, the PE teacher). Confirm this is
+   covered by the same basis as the rest of PE assessment.
+7. **Later phases** (AP, Combine, skill levels, report bands) widen the data displayed.
    Each phase updates the inventory above and is re-reviewed.
 
 ## The GitHub Pages address

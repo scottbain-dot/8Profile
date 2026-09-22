@@ -66,6 +66,22 @@ check('anonymous cannot write', /class list/.test(throws(() => as('', () => save
 check('error messages contain no email', !throws(() => as('x@gmail.example', () => saveStyle('team'))).includes('@'));
 check('saveGoal trims, strips control chars, caps length', as('sample.two@example.edu', () => { const g = saveGoal('  Mile\tunder 8:30 ' + 'x'.repeat(300)); return g.goal.length === 140 && g.goal.startsWith('Mile under 8:30'); }));
 
+console.log('predictions');
+const full = {}; PREDICT_ITEMS.forEach((k, i) => { full[k] = { rating: RATINGS[i % 3], freq: FREQS[i % 3] }; });
+check('Predictions tab has 29 columns', TABS.Predictions.length === 29 && TABS.Predictions[3] === 'cv_rating' && TABS.Predictions[28] === 'core_freq');
+check('no prediction yet → empty object, combine null', as('sample.one@example.edu', () => { const st = bootstrap().student; return JSON.stringify(st.predictions) === '{}' && st.combine === null; }));
+check('bootstrap exposes the item/rating vocab', as('sample.one@example.edu', () => { const b = bootstrap(); return b.predict.items.length === 13 && b.predict.ratings.length === 3 && b.predict.freqs.length === 3; }));
+check('incomplete submission rejected, nothing written', /Incomplete.*12 left/.test(throws(() => as('sample.one@example.edu', () => savePrediction('intro', { cv: { rating: 'strength', freq: 'often' } })))) && readTab_('Predictions').length === 0);
+check('bad value rejected', /Incomplete/.test(throws(() => as('sample.one@example.edu', () => { const bad = JSON.parse(JSON.stringify(full)); bad.kick.rating = 'amazing'; return savePrediction('intro', bad); }))));
+check('unknown checkpoint rejected', /Unknown checkpoint/.test(throws(() => as('sample.one@example.edu', () => savePrediction('final', full)))));
+check('full submission saved and echoed', as('sample.one@example.edu', () => { const r = savePrediction('Intro', full); return r.checkpoint === 'intro' && r.prediction.items.cv.rating === 'strength' && r.prediction.items.core.freq === FREQS[12 % 3] && r.prediction.timestamp.length >= 10; }));
+check('one row, keyed by verified email + checkpoint', readTab_('Predictions').length === 1 && readTab_('Predictions')[0].Email === 'sample.one@example.edu' && readTab_('Predictions')[0].Checkpoint === 'intro');
+check('re-save overwrites the same row', as('sample.one@example.edu', () => { const again = JSON.parse(JSON.stringify(full)); again.cv.rating = 'work-on'; savePrediction('intro', again); return readTab_('Predictions').length === 1 && bootstrap().student.predictions.intro.items.cv.rating === 'work-on'; }));
+check('another student sees no prediction', as('sample.two@example.edu', () => JSON.stringify(bootstrap().student.predictions) === '{}'));
+check('teacher / wrong domain / anonymous cannot save', [ 'other.teacher@example.edu', 'x@gmail.example', '' ].every(e => /class list/.test(throws(() => as(e, () => savePrediction('intro', full))))));
+check('client-supplied email in answers is ignored', as('sample.two@example.edu', () => { const sneaky = JSON.parse(JSON.stringify(full)); sneaky.Email = 'sample.one@example.edu'; savePrediction('intro', sneaky); const rows = readTab_('Predictions'); return rows.length === 2 && rows.filter(r => r.Email === 'sample.two@example.edu').length === 1; }));
+check('bootstrap payload never carries another student\'s rows', as('sample.two@example.edu', () => !JSON.stringify(bootstrap()).includes('sample.one')));
+
 console.log('photo lookup');
 check('off by default → no People call', as('sample.one@example.edu', () => bootstrap().student.photoUrl === ''));
 cfgTab.getDataRange().getValues().forEach((r, i) => { if (r[0] === 'photo_lookup') cfgTab.getRange(i + 1, 2).setValues([['TRUE']]); });
@@ -83,7 +99,7 @@ delete globalThis.AdminDirectory;
 console.log('retention');
 FakeSheets.uiAnswer = 'YES';
 clearProfileData();
-check('clearProfileData empties Profile, keeps Students', readTab_('Profile').length === 0 && readTab_('Students').length === 4);
+check('clearProfileData empties Profile + Predictions, keeps Students', readTab_('Profile').length === 0 && readTab_('Predictions').length === 0 && readTab_('Students').length === 4);
 
 console.log('web app');
 EMBEDDED_HTML.Index = read('src/Index.html');
