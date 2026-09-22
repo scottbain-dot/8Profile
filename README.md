@@ -82,7 +82,11 @@ synthetic (`example.edu`).
 1. Create a Google Sheet **in the FIS Workspace**, owned by the PE teacher account.
 2. Extensions → Apps Script. Replace the contents of `Code.gs` with `dist/Code.gs`.
    Project Settings → tick *Show "appsscript.json"* and replace it with `src/appsscript.json`.
-3. Save, reload the Sheet, run **PE Profile → 1. Set up tabs** (authorise when asked).
+3. Save. In the editor's function dropdown pick **`setupTabs`** and click **Run**. Authorise
+   with your FIS account when Google asks (Advanced → Go to project if it warns the app is
+   unverified). This creates the four tabs. Then **reload the Sheet**: the **PE Profile**
+   menu appears. (The menu is built on open and cannot ask for authorisation itself, so it
+   stays hidden until this one manual run.)
 4. Fill **Students** (Email · Name · Class) with the Grade 8 roster. Add colleagues to
    **Teachers**. Check **Config** (`domain` = `fis.edu`, `year_label`).
 5. Deploy → New deployment → Web app: *Execute as* **Me**, *Who has access* **Anyone within
@@ -96,6 +100,16 @@ synthetic (`example.edu`).
 
 After code changes: `npm run check`, commit, paste the new `dist/Code.gs`, then
 Deploy → Manage deployments → edit → *New version*. The URL stays the same.
+
+### Troubleshooting
+
+- **No "PE Profile" menu.** Run `setupTabs` once from the editor (step 3) and reload the Sheet.
+- **"Cannot call SpreadsheetApp.getActiveSpreadsheet"** or tabs appear nowhere: the script is
+  not bound to the Sheet. Open the editor from the Sheet via Extensions → Apps Script and paste there.
+- **Student sees "Couldn't confirm who you are".** The deployment is not "Anyone within FIS",
+  or the student is signed into a personal Google account in that browser profile.
+- **Changed the Sheet's Config and nothing happens.** Config is cached for two minutes; use
+  PE Profile → Clear config cache.
 
 Keep the Sheet ID, script ID and `/exec` URL out of this repo (`config.example.json`
 shows the shape; `config.json` is git-ignored).
