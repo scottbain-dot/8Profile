@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PE Athlete Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--disp:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--body:"Inter",system-ui,sans-serif;
+    --frame:linear-gradient(145deg,#f3d689,#c9982f 45%,#8a6a1e 60%,#e7b64b);
+    --ink1:#7d2233;--ink2:#6f1d2c;--ink3:#4a1019;--acc:#e7b64b;--accs:#f3d689;--ribInk:#3a1008;}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(circle at 30% 15%,#2a2024,#141013);display:flex;align-items:flex-start;justify-content:center;gap:30px;flex-wrap:wrap;padding:38px 20px;font-family:var(--body)}
+  .stage{display:flex;flex-direction:column;align-items:center;gap:16px}
+  .card{width:340px;border-radius:22px;padding:3px;background:var(--frame);box-shadow:0 24px 60px rgba(0,0,0,.5);transition:.3s}
+  .inner{background:linear-gradient(160deg,var(--ink1),var(--ink2) 40%,var(--ink3));border-radius:19px;padding:15px 16px 13px;position:relative;overflow:hidden;transition:.3s}
+  .sheen{position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.13) 45%,transparent 60%);pointer-events:none}
+  .hdr{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2}
+  .crest{font-family:var(--disp);font-weight:700;font-size:11.5px;letter-spacing:.07em;color:var(--acc)}
+  .tierbadge{font-family:var(--disp);font-weight:700;font-size:11px;color:var(--ribInk);background:var(--frame);padding:2px 9px;border-radius:20px}
+  .pips{display:flex;gap:4px;align-items:center;margin-top:8px;position:relative;z-index:2;justify-content:flex-end}
+  .pip{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--acc)}.pip.on{background:var(--acc)}
+  .who{display:flex;align-items:center;gap:11px;margin-top:6px;position:relative;z-index:2}
+  .av{width:50px;height:50px;border-radius:50%;background:#dfeaf2;border:2px solid var(--acc);overflow:hidden;flex:none;display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:23px;color:var(--accs)}.av svg{width:100%;height:100%;display:block}
+  .who h1{font-family:var(--disp);font-weight:700;font-size:26px;color:#fff;margin:0;line-height:.95}.who .cl{font-size:11px;color:rgba(255,255,255,.7)}
+  .arch{margin-top:10px;background:linear-gradient(90deg,var(--acc),var(--accs));border-radius:8px;padding:5px 12px;display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
+  .arch .t{font-family:var(--disp);font-weight:700;font-size:16px;color:var(--ribInk);letter-spacing:.03em}.arch .e{font-size:17px}
+  .radar{position:relative;z-index:2;margin:4px 0 2px}
+  .stats{display:flex;gap:6px;position:relative;z-index:2;margin-top:2px}
+  .st{flex:1;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.16);border-radius:9px;padding:6px;text-align:center}
+  .st .v{font-family:var(--disp);font-weight:700;font-size:16px;color:#fff;line-height:1}.st .up{color:#7fe0a8;font-size:11px;font-weight:700}
+  .st .l{font-size:8.5px;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  .badges{display:flex;gap:6px;justify-content:center;margin-top:10px;position:relative;z-index:2}
+  .bd{width:44px;text-align:center}
+  .bd .ic{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff3d6,var(--acc) 60%,#b9871f);display:grid;place-items:center;font-size:18px;margin:0 auto;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+  .bd .bl{font-size:7.5px;color:rgba(255,255,255,.78);margin-top:3px;line-height:1.1}
+  .foot{margin-top:11px;text-align:center;position:relative;z-index:2;border-top:1px solid rgba(255,255,255,.18);padding-top:8px}
+  .foot .g{font-family:var(--disp);font-weight:600;font-size:12px;color:var(--acc)}.foot .s{font-size:9px;color:rgba(255,255,255,.6);margin-top:1px}
+  .rlabel{font-family:var(--disp);font-size:9.5px;fill:rgba(255,255,255,.82);font-weight:600}
+  /* pickers */
+  .pick{width:340px}
+  .picklab{font-family:var(--disp);font-weight:600;font-size:12px;color:#b7abad;letter-spacing:.05em;margin:2px 0 6px}
+  .styles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .sbtn{background:#241d20;border:1px solid #3a2e31;border-radius:9px;padding:7px 4px;cursor:pointer;text-align:center;color:#d8cccd;transition:.15s}
+  .sbtn:hover{border-color:#5a4a4e}.sbtn.sel{border-color:var(--acc);background:#2e2528;color:#fff}
+  .sbtn .se{font-size:16px;display:block}.sbtn .sn{font-size:9px;font-family:var(--disp);font-weight:600;margin-top:2px;letter-spacing:.02em}
+  .tiers{display:flex;gap:6px;margin-top:10px}
+  .tbtn{flex:1;background:#241d20;border:1px solid #3a2e31;border-radius:9px;padding:7px;cursor:pointer;text-align:center;color:#d8cccd;font-family:var(--disp);font-weight:600;font-size:13px;transition:.15s}
+  .tbtn.sel{color:#fff;border-color:#7a6a4e}
+  .note{max-width:310px;color:#c8bcbe;font-size:12.5px;line-height:1.6}
+  .note h3{font-family:var(--disp);color:var(--acc);font-size:19px;margin:0 0 8px}.note b{color:#fff}
+  .note .blk{border-left:2px solid #3a2e31;padding-left:12px;margin-bottom:14px}
+
+  .dlwrap{width:340px;margin-top:4px}
+  .dlbtn{width:100%;background:linear-gradient(145deg,#f3d689,#c9982f);color:#3a1008;border:none;font-family:var(--disp);font-weight:700;font-size:15px;padding:11px;border-radius:10px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+  .dlbtn:hover{filter:brightness(1.05)}
+  .dlnote{font-size:10.5px;color:#9a8f91;margin-top:7px;line-height:1.45}
+</style></head><body>
+
+<div class="stage">
+  <div class="card" id="card"><div class="inner" id="inner">
+    <div class="sheen"></div>
+    <div class="hdr"><span class="crest">FIS · PE ATHLETE · 26/27</span><span class="tierbadge" id="tierbadge">GOLD</span></div>
+    <div class="pips"><span class="pip on"></span><span class="pip"></span><span class="pip"></span></div>
+    <div class="who"><div class="av" title="Shows the student's Google sign-in photo · initials if none"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfe4f2"/><stop offset="1" stop-color="#a9cbe0"/></linearGradient></defs><rect width="100" height="100" fill="url(#bg)"/><path d="M18 100 C18 74 34 66 50 66 C66 66 82 74 82 100 Z" fill="#3f6d8c"/><path d="M22 98 C22 80 34 74 50 74 C66 74 78 80 78 98 Z" fill="#5b8bad"/><circle cx="50" cy="44" r="20" fill="#e8b98f"/><path d="M30 42 C30 24 44 20 50 20 C58 20 70 25 70 42 C70 36 62 32 50 32 C40 32 34 35 30 42 Z" fill="#4a3526"/><circle cx="43" cy="45" r="2.4" fill="#3a2b20"/><circle cx="57" cy="45" r="2.4" fill="#3a2b20"/><path d="M44 53 C47 56 53 56 56 53" stroke="#b9805a" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div><div><h1>MIA CHEN</h1><div class="cl">Class 8(06B)</div></div></div>
+    <div class="arch"><span class="t" id="archt">THE IMPROVER</span><span class="e" id="arche">📈</span></div>
+    <div class="radar" id="radar"><svg viewBox="0 0 300 200" width="100%" height="195" xmlns="http://www.w3.org/2000/svg"><polygon points="150.0,83.0 164.7,91.5 164.7,108.5 150.0,117.0 135.3,108.5 135.3,91.5" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="1"/><polygon points="150.0,66.0 179.4,83.0 179.4,117.0 150.0,134.0 120.6,117.0 120.6,83.0" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="1"/><polygon points="150.0,49.0 194.2,74.5 194.2,125.5 150.0,151.0 105.8,125.5 105.8,74.5" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="1"/><polygon points="150.0,32.0 208.9,66.0 208.9,134.0 150.0,168.0 91.1,134.0 91.1,66.0" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="1"/><line x1="150" y1="100" x2="150.0" y2="32.0" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="150.0" y="14.6" text-anchor="middle" class="rlabel">STAMINA</text><line x1="150" y1="100" x2="208.9" y2="66.0" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="226.6" y="58.8" text-anchor="start" class="rlabel">STRENGTH</text><line x1="150" y1="100" x2="208.9" y2="134.0" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="226.6" y="147.2" text-anchor="start" class="rlabel">SPEED</text><line x1="150" y1="100" x2="150.0" y2="168.0" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="150.0" y="191.4" text-anchor="middle" class="rlabel">SKILLS</text><line x1="150" y1="100" x2="91.1" y2="134.0" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="73.4" y="147.2" text-anchor="end" class="rlabel">TEAMWORK</text><line x1="150" y1="100" x2="91.1" y2="66.0" stroke="rgba(255,255,255,.13)" stroke-width="1"/><text x="73.4" y="58.8" text-anchor="end" class="rlabel">EFFORT</text><polygon points="150.0,62.6 174.7,85.7 179.4,117.0 150.0,134.0 114.7,120.4 107.6,75.5" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-dasharray="4 3"/><polygon points="150.0,44.2 185.3,79.6 191.2,123.8 150.0,146.2 102.9,127.2 95.8,68.7" fill="rgba(243,192,122,0.34)" stroke="#ffe0b8" stroke-width="2.5"/><circle cx="150.0" cy="44.2" r="3" fill="#ffe0b8"/><circle cx="185.3" cy="79.6" r="3" fill="#ffe0b8"/><circle cx="191.2" cy="123.8" r="3" fill="#ffe0b8"/><circle cx="150.0" cy="146.2" r="3" fill="#ffe0b8"/><circle cx="102.9" cy="127.2" r="3" fill="#ffe0b8"/><circle cx="95.8" cy="68.7" r="3" fill="#ffe0b8"/></svg></div>
+    <div class="stats">
+      <div class="st"><div class="v">8:05<span class="up"> ↑</span></div><div class="l">Mile</div></div>
+      <div class="st"><div class="v">L3<span class="up"> ↑</span></div><div class="l">Skills avg</div></div>
+      <div class="st"><div class="v">⭐⭐⭐</div><div class="l">Effort</div></div>
+    </div>
+    <div class="badges">
+      <div class="bd"><div class="ic">🏃</div><div class="bl">Mile PB</div></div>
+      <div class="bd"><div class="ic">📈</div><div class="bl">Big Riser</div></div>
+      <div class="bd"><div class="ic">🔥</div><div class="bl">Full Effort</div></div>
+      <div class="bd"><div class="ic">⭐</div><div class="bl">All-Rounder</div></div>
+    </div>
+    <div class="foot"><div class="g">◆ Levels up in January ◆</div><div class="s">faint line = your September self · watch it grow</div></div>
+  </div></div>
+
+  <div class="pick">
+    <div class="picklab">CHOOSE YOUR PE STYLE — this is your card's identity</div>
+    <div class="styles" id="styles"></div>
+    <div class="picklab" style="margin-top:12px">CARD TIER — earned by growth · breadth · mastery · consistency</div>
+    <div class="tiers" id="tiers"></div>
+    <div class="dlwrap">
+      <button class="dlbtn" onclick="downloadCard()">⬇ Download my card (PNG)</button>
+      <div class="dlnote">Saves your card as an image to keep, print or share. <b>In the real FIS app this runs inside your school login</b>, so a card with a student's photo never becomes a loose file outside FIS.</div>
+    </div>
+  </div>
+</div>
+
+<div class="note">
+  <h3>How it stays motivating for everyone</h3>
+  <div class="blk"><b>Style = who you are, self-chosen.</b> The six PE Styles are your own choice about how you like to play — none is "better." It sets your card's colour and identity.</div>
+  <div class="blk"><b>Tier = how you've grown, earnable by all.</b> Bronze → Silver → Gold comes from the <b>best of</b>: growth, filling out your hexagon (breadth), mastery/leadership, or holding a high level (consistency). So a maxed-out kid earns Gold by <b>breadth, consistency or mentoring</b> — never a dead-end.</div>
+  <div class="blk"><b>Effort is a full axis</b> — the one every kid controls, on the hexagon next to the physical stuff.</div>
+  <div class="blk"><b>No overall score.</b> It's a shape, not a rating. Different shapes, not a ranking.</div>
+  <div class="blk" style="border:none"><b>Photo = Google sign-in avatar.</b> The student's existing FIS profile photo, shown automatically — never uploaded or stored by the card, never leaves FIS. Initials show if there's no photo. (Requires the card to live in an FIS-login app.)</div>
+</div>
+
+<script>
+const STYLES={
+ competitor:{n:'Competitor',e:'🏆',ink:['#8f2130','#7a1b28','#4d0f18'],acc:'#f0c24a',accs:'#ffe08a',rib:'#3a1008'},
+ team:{n:'Team Player',e:'🤝',ink:['#12726a','#0e615a','#063d38'],acc:'#8fe0c8',accs:'#c9f5e8',rib:'#053d36'},
+ improver:{n:'Improver',e:'📈',ink:['#b5560e','#9c4a0c','#5e2c06'],acc:'#f3c07a',accs:'#ffe0b8',rib:'#4a2200'},
+ explorer:{n:'Explorer',e:'🧭',ink:['#22508c','#1d4577','#0f2747'],acc:'#8fbff0',accs:'#cfe4fb',rib:'#0c2747'},
+ energizer:{n:'Energizer',e:'⚡',ink:['#a3236b','#8c1d5b','#520f36'],acc:'#f7b0d8',accs:'#ffd6ec',rib:'#4a0f30'},
+ thinker:{n:'Active Thinker',e:'🧠',ink:['#5a3b9c','#4d3288','#2c1c52'],acc:'#c3a6f0',accs:'#e2d3fb',rib:'#241452'},
+};
+const TIERS={
+ bronze:{n:'BRONZE',frame:'linear-gradient(145deg,#e0a566,#a15c2b 50%,#7a441f 62%,#d68a4e)'},
+ silver:{n:'SILVER',frame:'linear-gradient(145deg,#f0f1f5,#b8bcc6 48%,#8a8f9c 62%,#e2e4ea)'},
+ gold:{n:'GOLD',frame:'linear-gradient(145deg,#f3d689,#c9982f 45%,#8a6a1e 60%,#e7b64b)'},
+};
+let curStyle='improver', curTier='gold';
+function applyStyle(k){const s=STYLES[k];const r=document.documentElement.style;
+ r.setProperty('--ink1',s.ink[0]);r.setProperty('--ink2',s.ink[1]);r.setProperty('--ink3',s.ink[2]);
+ r.setProperty('--acc',s.acc);r.setProperty('--accs',s.accs);r.setProperty('--ribInk',s.rib);
+ document.getElementById('archt').textContent='THE '+s.n.toUpperCase();document.getElementById('arche').textContent=s.e;
+ curStyle=k;document.querySelectorAll('.sbtn').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));drawRadar();}
+function applyTier(k){const t=TIERS[k];document.documentElement.style.setProperty('--frame',t.frame);
+ document.getElementById('tierbadge').textContent=t.n;curTier=k;
+ document.querySelectorAll('.tbtn').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));}
+// build pickers
+let sh='';for(const k in STYLES){sh+='<div class="sbtn" data-k="'+k+'" onclick="applyStyle(\''+k+'\')"><span class="se">'+STYLES[k].e+'</span><span class="sn">'+STYLES[k].n+'</span></div>';}
+document.getElementById('styles').innerHTML=sh;
+let th='';for(const k in TIERS){th+='<div class="tbtn" data-k="'+k+'" onclick="applyTier(\''+k+'\')">'+TIERS[k].n+'</div>';}
+document.getElementById('tiers').innerHTML=th;
+// radar
+const AX=[['STAMINA',.82,.55],['STRENGTH',.6,.42],['SPEED',.7,.5],['SKILLS',.68,.5],['TEAMWORK',.8,.6],['EFFORT',.92,.72]];
+const cx=150,cy=100,R=68;
+function pt(i,v){const a=(-90+i*60)*Math.PI/180;return[cx+R*v*Math.cos(a),cy+R*v*Math.sin(a)];}
+function drawRadar(){const acc=STYLES[curStyle].acc;const accs=STYLES[curStyle].accs;
+ let svg='';
+ for(let r=1;r<=4;r++){let p=[];for(let i=0;i<6;i++){const a=(-90+i*60)*Math.PI/180;p.push((cx+R*(r/4)*Math.cos(a))+','+(cy+R*(r/4)*Math.sin(a)));}svg+='<polygon points="'+p.join(' ')+'" fill="none" stroke="rgba(255,255,255,.13)" stroke-width="1"/>';}
+ for(let i=0;i<6;i++){const[x,y]=pt(i,1);svg+='<line x1="'+cx+'" y1="'+cy+'" x2="'+x+'" y2="'+y+'" stroke="rgba(255,255,255,.13)" stroke-width="1"/>';const[lx,ly]=pt(i,1.3);let an=Math.abs(lx-cx)<5?'middle':(lx>cx?'start':'end');svg+='<text x="'+lx+'" y="'+(ly+3)+'" text-anchor="'+an+'" class="rlabel">'+AX[i][0]+'</text>';}
+ let sep=AX.map((a,i)=>pt(i,a[2]).join(',')).join(' ');
+ svg+='<polygon points="'+sep+'" fill="rgba(255,255,255,.05)" stroke="rgba(255,255,255,.55)" stroke-width="1.5" stroke-dasharray="4 3"/>';
+ let now=AX.map((a,i)=>pt(i,a[1]).join(',')).join(' ');
+ svg+='<polygon points="'+now+'" fill="'+hexA(acc,.34)+'" stroke="'+accs+'" stroke-width="2.5"/>';
+ AX.forEach((a,i)=>{const[x,y]=pt(i,a[1]);svg+='<circle cx="'+x+'" cy="'+y+'" r="3" fill="'+accs+'"/>';});
+ document.getElementById('radar').innerHTML='<svg viewBox="0 0 300 200" width="100%" height="195" xmlns="http://www.w3.org/2000/svg">'+svg+'</svg>';}
+function hexA(h,a){h=h.replace('#','');const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return'rgba('+r+','+g+','+b+','+a+')';}
+applyStyle('improver');applyTier('gold');
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+function downloadCard(){
+  var el=document.getElementById('card');
+  if(typeof html2canvas!=='function'){alert('Download needs an internet connection to load the image library.');return;}
+  html2canvas(el,{backgroundColor:null,scale:3,useCORS:true}).then(function(cv){
+    var a=document.createElement('a');a.download='my-pe-athlete-card.png';a.href=cv.toDataURL('image/png');a.click();
+  }).catch(function(){alert('Could not generate the image in this browser.');});
+}
+</script>
+</body></html>

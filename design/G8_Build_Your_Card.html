@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Build Your PE Athlete Card</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--maroon:#6f1d2c;--gold:#e7b64b;--ink:#161213;--muted:#7a6f71;--line:#e7e0df;--paper:#f7f4f2;
+ --disp:"Archivo",system-ui,sans-serif;--body:"Inter",system-ui,sans-serif;
+ --ink1:#7d2233;--ink2:#6f1d2c;--ink3:#4a1019;--acc:#e7b64b;--accs:#f3d689;--rib:#3a1008;--frame:linear-gradient(145deg,#f3d689,#c9982f 45%,#8a6a1e 60%,#e7b64b);}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 50% 0%,#2a2024,#120d0e);color:#fff;font-family:var(--body);min-height:100vh;padding:26px 18px 60px}
+.wrap{max-width:1000px;margin:0 auto}
+.hero{text-align:center;margin-bottom:22px}
+.hero .k{font-family:var(--disp);font-weight:700;letter-spacing:.22em;font-size:13px;color:var(--gold)}
+.hero h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,5vw,52px);margin:6px 0 4px;letter-spacing:-.01em}
+.hero p{color:#c8bcbe;font-size:14px;margin:0}
+.name-in{display:flex;gap:10px;justify-content:center;margin:18px 0 26px;flex-wrap:wrap}
+.name-in input{background:#241d20;border:1px solid #3a2e31;border-radius:11px;padding:12px 15px;color:#fff;font-family:var(--body);font-size:15px}
+.name-in input#nm{width:min(320px,70vw)}.name-in input#cl{width:110px}
+.name-in input:focus{outline:none;border-color:var(--gold)}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:34px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.step{font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:12px}
+.styles{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.sbtn{background:#241d20;border:1.5px solid #3a2e31;border-radius:14px;padding:15px 14px;cursor:pointer;transition:.15s;text-align:left}
+.sbtn:hover{border-color:#5a4a4e;transform:translateY(-1px)}
+.sbtn.sel{border-color:var(--acc);background:#2e2528;box-shadow:0 6px 18px rgba(231,182,75,.2)}
+.sbtn .se{font-size:24px}.sbtn .sn{font-family:var(--disp);font-weight:700;font-size:16px;margin:5px 0 2px}
+.sbtn .sd{font-size:11.5px;color:#c8bcbe;line-height:1.35}
+/* card */
+.cardstage{display:flex;flex-direction:column;align-items:center;gap:16px;position:sticky;top:18px}
+.card{width:min(360px,86vw);border-radius:24px;padding:4px;background:var(--frame);box-shadow:0 26px 64px rgba(0,0,0,.55),0 0 30px rgba(231,182,75,.5);animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-.4deg)}50%{transform:translateY(-8px) rotate(.4deg)}}
+.cinner{background:linear-gradient(160deg,var(--ink1),var(--ink2) 42%,var(--ink3));border-radius:20px;padding:17px 19px;position:relative;overflow:hidden;transition:.3s}
+.cinner::after{content:"";position:absolute;top:-60%;left:-75%;width:55%;height:220%;background:linear-gradient(115deg,transparent,rgba(255,255,255,.42),transparent);transform:rotate(9deg);animation:sweep 4.2s ease-in-out infinite;pointer-events:none}
+@keyframes sweep{0%{left:-75%}60%,100%{left:150%}}
+.chd{display:flex;justify-content:space-between;align-items:center;font-family:var(--disp);font-weight:700;font-size:11px;color:var(--acc);position:relative;z-index:2}
+.ctier{font-family:var(--disp);font-weight:700;font-size:10px;color:var(--rib);background:var(--frame);padding:2px 9px;border-radius:20px}
+.cwho{font-family:var(--disp);font-weight:800;font-size:26px;margin-top:8px;position:relative;z-index:2;line-height:1}
+.cwho span{font-size:12px;color:#e7c9cf;font-weight:400}
+.crib{background:linear-gradient(90deg,var(--acc),var(--accs));border-radius:9px;padding:6px 13px;font-family:var(--disp);font-weight:700;color:var(--rib);margin:11px 0;display:flex;justify-content:space-between;align-items:center;font-size:18px;position:relative;z-index:2}
+.cstat{display:flex;gap:7px;margin-top:6px;position:relative;z-index:2}.cstat div{flex:1;background:rgba(0,0,0,.24);border:1px solid rgba(231,182,75,.28);border-radius:9px;padding:8px;text-align:center}
+.cstat b{font-family:var(--disp);font-size:18px;display:block;color:#fff}.cstat span{font-size:8px;color:#e7c9cf;text-transform:uppercase;letter-spacing:.05em}
+.cbadge{display:flex;gap:9px;justify-content:center;margin-top:11px;position:relative;z-index:2}.cbadge span{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff3d6,var(--acc) 62%,#b9871f);display:grid;place-items:center;font-size:15px}
+.cfoot{margin-top:11px;text-align:center;font-family:var(--disp);font-weight:600;font-size:11px;color:var(--acc);position:relative;z-index:2;border-top:1px solid rgba(231,182,75,.25);padding-top:8px}
+.rlabel{font-family:var(--disp);font-size:9px;fill:rgba(255,255,255,.82);font-weight:600}
+.dl{background:var(--frame);color:var(--rib);border:none;font-family:var(--disp);font-weight:700;font-size:14px;padding:11px 22px;border-radius:11px;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+/* whats coming */
+.coming{margin-top:44px}
+.coming h2{font-family:var(--disp);font-weight:800;font-size:clamp(24px,3.4vw,36px);text-align:center;margin:0 0 6px}
+.coming .sub{text-align:center;color:#c8bcbe;font-size:14px;margin:0 0 22px}
+.crow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:760px){.crow{grid-template-columns:1fr 1fr}}
+.cc{background:#221a1d;border:1px solid #3a2e31;border-radius:16px;padding:18px}
+.cc .ci{font-size:26px}.cc h3{font-family:var(--disp);font-weight:700;font-size:17px;margin:8px 0 4px}.cc p{font-size:12.5px;color:#c8bcbe;margin:0;line-height:1.45}
+</style></head><body>
+<div class="wrap">
+  <div class="hero">
+    <div class="k">GRADE 8 PE · 2026/27</div>
+    <h1>Build your Athlete Card</h1>
+    <p>Type your name, choose your style, and make it yours. It grows all year.</p>
+    <div class="name-in">
+      <input id="nm" placeholder="Your name" oninput="upd()" maxlength="20">
+      <input id="cl" placeholder="Class" oninput="upd()" maxlength="8">
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="step">1 · Choose your style</div>
+      <div class="styles" id="styles"></div>
+    </div>
+    <div class="cardstage">
+      <div class="card" id="card"><div class="cinner">
+        <div class="chd"><span>FIS · PE ATHLETE · 26/27</span><span class="ctier">BRONZE</span></div>
+        <div class="cwho" id="cwho">YOUR NAME <span id="ccl"></span></div>
+        <div class="crib"><span id="archt">PICK A STYLE</span><span id="arche">✨</span></div>
+        <div style="position:relative;z-index:2;margin:2px 0"><svg id="rad" viewBox="0 0 300 188" width="100%" height="150"><polygon points="150.0,75.0 163.0,82.5 163.0,97.5 150.0,105.0 137.0,97.5 137.0,82.5" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,60.0 176.0,75.0 176.0,105.0 150.0,120.0 124.0,105.0 124.0,75.0" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,45.0 189.0,67.5 189.0,112.5 150.0,135.0 111.0,112.5 111.0,67.5" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,30.0 202.0,60.0 202.0,120.0 150.0,150.0 98.0,120.0 98.0,60.0" fill="none" stroke="rgba(255,255,255,.14)"/><text x="150.0" y="15.0" text-anchor="middle" class="rlabel">STAMINA</text><text x="217.5" y="54.0" text-anchor="start" class="rlabel">STRENGTH</text><text x="217.5" y="132.0" text-anchor="start" class="rlabel">SPEED</text><text x="150.0" y="171.0" text-anchor="middle" class="rlabel">SKILLS</text><text x="82.5" y="132.0" text-anchor="end" class="rlabel">TEAM</text><text x="82.5" y="54.0" text-anchor="end" class="rlabel">EFFORT</text><polygon points="150.0,52.8 178.6,73.5 181.2,108.0 150.0,123.0 113.6,111.0 112.6,68.4" fill="rgba(240,194,74,.3)" stroke="#ffe08a" stroke-width="2.2"/><text x="150" y="150" text-anchor="middle" style="font-family:Inter;font-size:10px;fill:rgba(255,255,255,.6)">your shape fills in at the Combine</text></svg></div>
+        <div class="cstat"><div><b>—</b><span>Mile</span></div><div><b>—</b><span>Skills</span></div><div><b>—</b><span>Effort</span></div></div>
+        <div class="cbadge"><span>🏃</span><span>📈</span><span>🔥</span><span>⭐</span></div>
+        <div class="cfoot">◆ Your card levels up as you grow ◆</div>
+      </div></div>
+      <button class="dl" onclick="download()">⬇ Save my card</button>
+    </div>
+  </div>
+
+  <div class="coming">
+    <h2>What's coming this year</h2>
+    <p class="sub">Here's how your card fills up and levels up.</p>
+    <div class="crow">
+      <div class="cc"><div class="ci">📊</div><h3>The Combine</h3><p>Measure your fitness and skills three times a year. Watch your own numbers climb.</p></div>
+      <div class="cc"><div class="ci">🧩</div><h3>Skill ladders</h3><p>Nine building blocks, four levels each. Self, peer, then teacher signs you off.</p></div>
+      <div class="cc"><div class="ci">🤝</div><h3>Participation</h3><p>How you show up, all year. Your five keys, tracked as you grow.</p></div>
+      <div class="cc"><div class="ci">🏅</div><h3>Level up</h3><p>Earn badges and climb Bronze to Silver to Gold by growing, not by ranking.</p></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const STYLES={
+ competitor:{n:'The Competitor',e:'🏆',d:'I love to compete and give everything.',ink:['#8f2130','#7a1b28','#4d0f18'],acc:'#f0c24a',accs:'#ffe08a',rib:'#3a1008'},
+ team:{n:'The Team Player',e:'🤝',d:'I\u2019m at my best lifting the team up.',ink:['#12726a','#0e615a','#063d38'],acc:'#8fe0c8',accs:'#c9f5e8',rib:'#053d36'},
+ improver:{n:'The Improver',e:'📈',d:'I\u2019m all about getting better than I was.',ink:['#b5560e','#9c4a0c','#5e2c06'],acc:'#f3c07a',accs:'#ffe0b8',rib:'#4a2200'},
+ explorer:{n:'The Explorer',e:'🧭',d:'I love trying new activities and challenges.',ink:['#22508c','#1d4577','#0f2747'],acc:'#8fbff0',accs:'#cfe4fb',rib:'#0c2747'},
+ energizer:{n:'The Energizer',e:'⚡',d:'I bring energy and fun to every session.',ink:['#a3236b','#8c1d5b','#520f36'],acc:'#f7b0d8',accs:'#ffd6ec',rib:'#4a0f30'},
+ thinker:{n:'The Active Thinker',e:'🧠',d:'I understand the why and think tactically.',ink:['#5a3b9c','#4d3288','#2c1c52'],acc:'#c3a6f0',accs:'#e2d3fb',rib:'#241452'},
+};
+let cur='competitor';
+let sh='';for(const k in STYLES){const s=STYLES[k];sh+='<div class="sbtn" data-k="'+k+'" onclick="pick(\''+k+'\')"><span class="se">'+s.e+'</span><div class="sn">'+s.n+'</div><div class="sd">'+s.d+'</div></div>';}
+document.getElementById('styles').innerHTML=sh;
+function upd(){
+  const nm=(document.getElementById('nm').value||'YOUR NAME').toUpperCase();
+  const cl=document.getElementById('cl').value;
+  document.getElementById('cwho').innerHTML=nm+' <span>'+(cl?'· '+cl:'')+'</span>';
+}
+function pick(k){cur=k;const s=STYLES[k];const r=document.documentElement.style;
+  r.setProperty('--ink1',s.ink[0]);r.setProperty('--ink2',s.ink[1]);r.setProperty('--ink3',s.ink[2]);
+  r.setProperty('--acc',s.acc);r.setProperty('--accs',s.accs);r.setProperty('--rib',s.rib);
+  document.getElementById('archt').textContent=s.n.toUpperCase();document.getElementById('arche').textContent=s.e;
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.toggle('sel',b.dataset.k===k));drawRadar();}
+// radar (placeholder shape until real data)
+const AX=[.62,.55,.6,.55,.7,.72],cx=150,cy=90,R=60,L=['STAMINA','STRENGTH','SPEED','SKILLS','TEAM','EFFORT'];
+function pt(i,v){const a=(-90+i*60)*Math.PI/180;return[cx+R*v*Math.cos(a),cy+R*v*Math.sin(a)];}
+function drawRadar(){const s=STYLES[cur];let g='';
+ for(let r=1;r<=4;r++){let p=[];for(let i=0;i<6;i++){const a=(-90+i*60)*Math.PI/180;p.push((cx+R*(r/4)*Math.cos(a))+','+(cy+R*(r/4)*Math.sin(a)));}g+='<polygon points="'+p.join(' ')+'" fill="none" stroke="rgba(255,255,255,.14)"/>';}
+ for(let i=0;i<6;i++){const[x,y]=pt(i,1.3);let an=Math.abs(x-cx)<5?'middle':(x>cx?'start':'end');g+='<text x="'+x+'" y="'+(y+3)+'" text-anchor="'+an+'" class="rlabel">'+L[i]+'</text>';}
+ g+='<polygon points="'+AX.map((v,i)=>pt(i,v).join(',')).join(' ')+'" fill="'+hexA(s.acc,.3)+'" stroke="'+s.accs+'" stroke-width="2.2"/>';
+ g+='<text x="150" y="150" text-anchor="middle" style="font-family:Inter;font-size:10px;fill:rgba(255,255,255,.6)">your shape fills in at the Combine</text>';
+ document.getElementById('rad').innerHTML=g;}
+function hexA(h,a){h=h.replace('#','');return'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')';}
+function download(){if(typeof html2canvas!=='function'){alert('Need internet to save the image.');return;}
+  html2canvas(document.getElementById('card'),{backgroundColor:null,scale:3}).then(cv=>{const a=document.createElement('a');a.download='my-pe-card.png';a.href=cv.toDataURL();a.click();});}
+pick('competitor');upd();
+</script>
+</body></html>

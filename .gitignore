@@ -1,0 +1,30 @@
+# ── Secrets & config: never committed ──────────────────────────────
+.env
+.env.*
+.clasp.json
+.clasprc.json
+config.json
+config.local.*
+*.pem
+*.key
+token*.json
+credentials*.json
+
+# ── Data: only synthetic data under data/dummy/ is allowed in this repo ──
+data/**
+!data/dummy/
+!data/dummy/**
+exports/
+*.xlsx
+*.xls
+*.numbers
+
+# ── Screenshots can contain real students: keep them out ──
+screenshots/
+dev/shots/
+
+# ── Build / tooling ──
+dev/preview.html
+node_modules/
+.DS_Store
+Thumbs.db
