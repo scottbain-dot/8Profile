@@ -5,9 +5,9 @@ people shown are fictional sample data.
 
 | File | What it shows | Status in the app |
 |---|---|---|
-| `G8_Build_Your_Card.html` | Name + PE-Style picker with live card reskin, "what's coming" | **v1** — ported to `src/App.html` / `src/Styles.html` (name comes from sign-in, not typed) |
-| `PE_Athlete_Card.html` | The full collectible card: foil tiers (Bronze/Silver/Gold), radar with September ghost line, stats, badges, PNG download | v2 (radar from real data) · v4 (tiers, badges) · download deferred until html2canvas is vendored |
-| `My_PE_Profile_mockup.html` | The full profile: at-a-glance tiles, fitness, fundamental-skill ladders, game skills, participation trend, report bands, reflection, detail overlays | v2–v4 |
+| `G8_Build_Your_Card.html` | Name + PE-Style picker with live card reskin | **v1** — the "Build my card" screen in `src/App.html` (name comes from sign-in, not typed) |
+| `PE_Athlete_Card.html` | The full collectible card: foil tiers (Bronze/Silver/Gold), radar with September ghost line, stats, badges, PNG download | v3 (radar from real data) · v4 (tiers, badges) · download deferred until html2canvas is vendored |
+| `My_PE_Profile_mockup.html` | The full profile: at-a-glance tiles, fitness, fundamental-skill ladders, game skills, participation trend, report bands, reflection, detail overlays | **v1** — the main screen, every section in its empty "fills in at the Combine" state; data arrives v2–v4 |
 
 Visual system reused by the app: FIS maroon `#6f1d2c` + gold `#e7b64b`, display font
 Archivo (the profile mockups use Barlow Condensed; the brief specifies Archivo, so the

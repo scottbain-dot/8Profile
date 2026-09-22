@@ -23,9 +23,10 @@ FakeSheets.user = FakeSheets.owner;
 setupTabs();
 const cfgTab = FakeSheets.book.getSheetByName('Config');
 cfgTab.getDataRange().getValues().forEach((r, i) => { if (r[0] === 'domain') cfgTab.getRange(i + 1, 2).setValues([['example.edu']]); });
-FakeSheets.book.getSheetByName('Students').getRange(2, 1, 3, 3).setValues([
+FakeSheets.book.getSheetByName('Students').getRange(2, 1, 4, 3).setValues([
   ['Sample.One@example.edu', 'Sample One', '8A'],
-  ['sample.two@example.edu', 'Sample Two', '8A'],
+  ['sample.two@example.edu', 'Two, Sample', '8A'],
+  ['sample.three@example.edu', 'T, Sample Jo', '8B'],
   ['teacher@example.edu', 'Teacher Test', '8B']
 ]);
 FakeSheets.book.getSheetByName('Teachers').getRange(3, 1, 1, 2).setValues([['other.teacher@example.edu', 'Other Teacher']]);
@@ -41,6 +42,10 @@ const s1 = as('sample.one@example.edu', () => bootstrap());
 check('student (case-insensitive email) → own name & class', s1.role === 'student' && s1.student.name === 'Sample One' && s1.student.klass === '8A', s1);
 check('student payload has no email and no roster', !('email' in s1) && !('roster' in s1) && !JSON.stringify(s1).includes('example.edu'), s1);
 check('student initials', s1.student.initials === 'SO');
+check('"First Last" → first + full display', s1.student.first === 'Sample' && s1.student.name === 'Sample One');
+check('"Last, First" → first name only, initial ignored', as('sample.two@example.edu', () => { const st = bootstrap().student; return st.first === 'Sample' && st.name === 'Sample' && st.initials === 'S'; }));
+check('"L, First Middle" → first token after the comma', as('sample.three@example.edu', () => { const st = bootstrap().student; return st.first === 'Sample' && st.name === 'Sample'; }));
+check('nameParts_ edge cases', nameParts_('  ').first === '' && nameParts_('Solo').display === 'Solo' && nameParts_(',').first === '' );
 check('no style yet → empty', s1.student.style === '' && s1.student.photoUrl === '');
 check('owner on roster → student + alsoTeacher', as('teacher@example.edu', () => { const b = bootstrap(); return b.role === 'student' && b.alsoTeacher === true; }));
 check('teacher not on roster → teacher view with own email only', as('other.teacher@example.edu', () => { const b = bootstrap(); return b.role === 'teacher' && b.email === 'other.teacher@example.edu' && !b.student; }));
@@ -69,11 +74,16 @@ check('on, but People service missing → initials fallback, no throw', as('samp
 globalThis.People = { People: { searchDirectoryPeople: o => ({ people: [{ photos: [{ url: 'https://photo.example/' + encodeURIComponent(o.query), default: false }] }] }) } };
 check('on, directory returns a photo → url passed through, nothing stored', as('sample.one@example.edu', () => bootstrap().student.photoUrl === 'https://photo.example/sample.one%40example.edu') && !JSON.stringify(FakeSheets.book.toJSON()).includes('photo.example'));
 delete globalThis.People;
+globalThis.AdminDirectory = { Users: { get: (email, o) => ({ thumbnailPhotoUrl: 'https://photo.example/dir/' + encodeURIComponent(email) + '/' + o.viewType, isDefaultPhoto: false }) } };
+check('People off, Admin Directory on → domain_public thumbnail used', as('sample.one@example.edu', () => bootstrap().student.photoUrl === 'https://photo.example/dir/sample.one%40example.edu/domain_public'));
+globalThis.AdminDirectory = { Users: { get: () => ({ thumbnailPhotoUrl: 'https://photo.example/default', isDefaultPhoto: true }) } };
+check('Admin Directory default photo → initials', as('sample.one@example.edu', () => bootstrap().student.photoUrl === ''));
+delete globalThis.AdminDirectory;
 
 console.log('retention');
 FakeSheets.uiAnswer = 'YES';
 clearProfileData();
-check('clearProfileData empties Profile, keeps Students', readTab_('Profile').length === 0 && readTab_('Students').length === 3);
+check('clearProfileData empties Profile, keeps Students', readTab_('Profile').length === 0 && readTab_('Students').length === 4);
 
 console.log('web app');
 EMBEDDED_HTML.Index = read('src/Index.html');

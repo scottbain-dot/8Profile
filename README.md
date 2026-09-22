@@ -44,9 +44,11 @@ This is the same pattern as the `net-games` PE tracker, which FIS students alrea
 src/
   Code.gs          server: tabs, config, identity, bootstrap, saveStyle/saveGoal, Sheet menu
   Index.html       page shell (Apps Script template)
-  Styles.html      CSS
-  App.html         client: greeting, style picker + live card, teaser profile, "what's coming"
+  Styles.html      CSS (profile = light mockup, card builder = dark mockup)
+  Rubrics.html     GENERATED from docs/G8_PE_Rubric_Bank.md by dev/build-rubrics.js (skill ladders)
+  App.html         client: profile page (teaser card, at-a-glance, fitness, skills, participation, report) + card builder
   appsscript.json  manifest: least-privilege scopes, web app = DOMAIN access, executes as deployer
+  appsscript.photo.json  same, plus the directory services + scopes for the Google photo
 dist/
   Code.gs          GENERATED single file (server + embedded HTML) — what gets pasted. node dev/build-single.js
 dev/
@@ -54,6 +56,7 @@ dev/
   mock-runtime.js  fake google.script.run + synthetic roster seed (browser preview)
   build-preview.js builds dev/preview.html from the real app files
   build-single.js  builds dist/Code.gs
+  build-rubrics.js builds src/Rubrics.html from the Rubric Bank
   test-server.js   Node checks of the privacy guarantees (own row only, domain refused, writes validated)
   smoke.js         headless Chromium run of the preview (Playwright); screenshots in dev/shots/ (ignored)
 data/dummy/        synthetic test data only
@@ -94,9 +97,13 @@ synthetic (`example.edu`).
 6. Test with a **dummy student account** in the FIS domain (on the roster), a domain
    account not on the roster, and a non-FIS account. Expected: own profile / "not on the
    list" / "use your FIS account". Only then share the link.
-7. Optional photo: Apps Script editor → Services → add **People API**, set Config
-   `photo_lookup` to TRUE, redeploy. If the directory does not return photos, students
-   simply see initials.
+7. **Google profile photo** (optional, off by default): replace `appsscript.json` with
+   `src/appsscript.photo.json` (it enables the People API and Admin SDK services and adds
+   the two directory-read scopes), save, run `setupTabs` from the editor once more to
+   re-authorise, set Config `photo_lookup` to TRUE, then Manage deployments → New version.
+   The script looks up each student's own directory photo at runtime, People API first,
+   Admin Directory (domain_public view) second. If FIS directory sharing is off, students
+   simply see initials and nothing breaks.
 
 After code changes: `npm run check`, commit, paste the new `dist/Code.gs`, then
 Deploy → Manage deployments → edit → *New version*. The URL stays the same.
@@ -108,6 +115,8 @@ Deploy → Manage deployments → edit → *New version*. The URL stays the same
   not bound to the Sheet. Open the editor from the Sheet via Extensions → Apps Script and paste there.
 - **Student sees "Couldn't confirm who you are".** The deployment is not "Anyone within FIS",
   or the student is signed into a personal Google account in that browser profile.
+- **Name shows the wrong way round.** Names in the Students tab may be "Last, First" or
+  "First Last"; the app greets by first name either way and ignores anything before a comma.
 - **Changed the Sheet's Config and nothing happens.** Config is cached for two minutes; use
   PE Profile → Clear config cache.
 

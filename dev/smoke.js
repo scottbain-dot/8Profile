@@ -16,29 +16,48 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
 
+  // First visit, no style yet → lands on the dark "build your card" screen
   await page.goto(url('role=student'));
   await page.waitForSelector('.sbtn');
-  check('student greeted by first name', (await page.textContent('h1')).includes('Hi Sample'));
-  check('card shows full name', (await page.textContent('.cname')).includes('Sample One'));
+  check('first visit opens the card builder', await page.evaluate(() => document.body.classList.contains('dark')));
+  check('greeted by first name', (await page.textContent('h1')).includes('Hi Sample,'));
+  check('card shows the name', (await page.textContent('.cname')).includes('Sample One'));
   check('no style chosen yet', (await page.textContent('#archt')) === 'PICK A STYLE');
   await page.click('.sbtn[data-k="explorer"]');
   await page.waitForFunction(() => document.querySelector('#saved').textContent.includes('saved'));
   check('style saved', (await page.textContent('#archt')) === 'THE EXPLORER');
-  await page.screenshot({ path: path.join(shots, 'student.png'), fullPage: true });
+  await page.screenshot({ path: path.join(shots, 'card.png'), fullPage: true });
+  await page.click('#toprofile2');
+  await page.waitForSelector('.cardteaser');
+  check('back to the light profile', !(await page.evaluate(() => document.body.classList.contains('dark'))));
+  check('profile teaser shows the chosen style', (await page.textContent('.ct-arch')).includes('THE EXPLORER'));
+  check('nine fundamental skills from the rubric bank', (await page.$$('[data-ov^="fund-"]')).length === 9);
+  await page.click('[data-ov="fund-catch"]');
+  await page.waitForSelector('.ov.show');
+  check('ladder overlay shows four levels', (await page.$$('.ov.show .lad')).length === 4);
+  await page.keyboard.press('Escape');
+  await page.screenshot({ path: path.join(shots, 'profile.png'), fullPage: true });
 
+  // Return visit with a style → straight to the profile
   await page.goto(url('role=student').replace('reset=1&', ''));
+  await page.waitForSelector('.cardteaser');
+  check('return visit opens the profile with the saved style', (await page.textContent('.ct-arch')).includes('THE EXPLORER'));
+  await page.click('#tocard');
   await page.waitForSelector('.sbtn');
-  check('choice persists on reload', (await page.textContent('#archt')) === 'THE EXPLORER');
+  check('View my card reopens the builder with the choice selected', (await page.getAttribute('.sbtn[data-k="explorer"]', 'aria-pressed')) === 'true');
 
   await page.goto(url('role=student2').replace('reset=1&', ''));
-  await page.waitForSelector('.sbtn');
-  check('another student has their own choice', (await page.textContent('#archt')) === 'THE IMPROVER');
+  await page.waitForSelector('.cardteaser');
+  check('"Last, First" roster name → first name only', (await page.textContent('.ct-name')).trim().startsWith('Sample ') && !(await page.textContent('.ct-name')).includes('Two'));
+  check('another student has their own choice', (await page.textContent('.ct-arch')).includes('THE IMPROVER'));
 
   await page.goto(url('role=student&photo=1').replace('reset=1&', ''));
-  await page.waitForSelector('.av img');
-  check('photo shown when the directory returns one', (await page.$$('.av img, .cav img')).length === 2);
+  await page.waitForSelector('.ct-av img');
+  check('photo shown when the directory returns one', (await page.$$('.ct-av img')).length === 1);
 
   await page.goto(url('role=student&fail=1').replace('reset=1&', ''));
+  await page.waitForSelector('.cardteaser');
+  await page.click('#tocard');
   await page.waitForSelector('.sbtn');
   await page.click('.sbtn[data-k="team"]');
   await page.waitForSelector('.toast.err.show');
@@ -52,9 +71,12 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(url('role=student').replace('reset=1&', ''));
-  await page.waitForSelector('.sbtn');
+  await page.waitForSelector('.cardteaser');
   check('no horizontal scroll on phone', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
-  await page.screenshot({ path: path.join(shots, 'student-phone.png'), fullPage: true });
+  await page.screenshot({ path: path.join(shots, 'profile-phone.png'), fullPage: true });
+  await page.click('#tocard'); await page.waitForSelector('.sbtn');
+  check('no horizontal scroll on phone (card)', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+  await page.screenshot({ path: path.join(shots, 'card-phone.png'), fullPage: true });
 
   check('no page errors', errors.length === 0, errors.join(' | '));
   await browser.close();

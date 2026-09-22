@@ -6,7 +6,6 @@
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = (sel, root) => (root || document).querySelector(sel);
 function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' err' : ''); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
-function firstName(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
 
 // ═══════════════ server bridge ═══════════════
 function rawCall(fn, ...args) {
@@ -37,9 +36,15 @@ const SKINS = {
   thinker:    { e: '🧠', d: 'I understand the why and think tactically.',      ink: ['#5a3b9c', '#4d3288', '#2c1c52'], acc: '#c3a6f0', accs: '#e2d3fb', rib: '#241452' }
 };
 const ORDER = ['competitor', 'team', 'improver', 'explorer', 'energizer', 'thinker'];
+const DEFAULT_SKIN = { e: '✨', ink: ['#7d2233', '#6f1d2c', '#4a1019'], acc: '#e7b64b', accs: '#f3d689', rib: '#3a1008' };
 function hexA(h, a) { h = h.replace('#', ''); return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')'; }
+function setSkin(k) {
+  const s = SKINS[k] || DEFAULT_SKIN, r = document.documentElement.style;
+  r.setProperty('--ink1', s.ink[0]); r.setProperty('--ink2', s.ink[1]); r.setProperty('--ink3', s.ink[2]);
+  r.setProperty('--acc', s.acc); r.setProperty('--accs', s.accs); r.setProperty('--rib', s.rib);
+}
 
-// ═══════════════ radar (placeholder shape until Combine data exists — v2) ═══════════════
+// ═══════════════ radar (placeholder shape until Combine data exists — v3) ═══════════════
 const AX = ['STAMINA', 'STRENGTH', 'SPEED', 'SKILLS', 'TEAM', 'EFFORT'], PLACE = [.62, .55, .6, .55, .7, .72];
 const cx = 150, cy = 90, R = 60;
 function pt(i, v) { const a = (-90 + i * 60) * Math.PI / 180; return [cx + R * v * Math.cos(a), cy + R * v * Math.sin(a)]; }
@@ -52,56 +57,102 @@ function radar(skin) {
   return '<svg viewBox="0 0 300 190" width="100%" height="160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six-sided fitness and skills chart, placeholder until the Combine">' + g + '</svg>';
 }
 
+// ═══════════════ profile content (v1: everything is "coming"; data arrives in v2–v4) ═══════════════
+const FUND = [['throw', '🎯'], ['catch', '🧤'], ['strike', '🏏'], ['dribble', '⛹️'], ['kick', '⚽'], ['balance', '🤸'], ['agility', '🏃'], ['jump', '⬆️'], ['core', '🧱']];
+const D = {
+  'gl-fit':   { e: '🏃', t: 'Fitness', m: 'Combine trend', what: 'Five measures of your physical capacities: the mile, push-ups, sit-to-stand, broad jump and the 40 m sprint.', when: 'Your first numbers come from the September Combine. Then you chase your own records in January and May.' },
+  'gl-fund':  { e: '🧩', t: 'Fundamental skills', m: 'Nine building blocks, on the Combine ladder', what: 'Throw, catch, strike, dribble, kick, balance, agility, jump & land, core stability. Each is a 4-level ladder: stationary → on the move → isolated challenge → under pressure.', when: 'Tested identically every Combine, so your level is a trend. Cleared self → peer → teacher.' },
+  'gl-ap':    { e: '🤝', t: 'Participation', m: 'Your biggest all-year story', what: 'How you show up: five keys, tracked through every unit.', when: 'You rate yourself at the start and end of the year; your teacher checks in each unit.' },
+  'gl-know':  { e: '🧠', t: 'Understanding', m: 'Using what you know in new games', what: 'Knowing the why: fitness concepts, safe practice, and taking a tactic from one game into another.', when: 'Grows through Fitness, Parkour and especially the Tactics Cup.' },
+  'fit-cv':   { e: '🫀', t: 'Cardiovascular endurance', m: 'The mile run · Sept → Jan → May', what: 'Heart and lung staying power. The one everybody can move.', when: 'First mile at the September Combine.' },
+  'fit-me':   { e: '💪', t: 'Muscular endurance', m: 'Push-ups (upper) & sit-to-stand (lower)', what: 'How many quality reps in 60 seconds. Sit-ups are retired; core stability is its own skill ladder.', when: 'September Combine.' },
+  'fit-pw':   { e: '💥', t: 'Power', m: 'Standing broad jump', what: 'Explosive strength, measured in centimetres.', when: 'September Combine.' },
+  'fit-sp':   { e: '⚡', t: 'Speed', m: '40 m sprint', what: 'Acceleration and top speed, measured in seconds.', when: 'September Combine.' },
+  'sk-net':   { e: '🏸', t: 'Net & wall', m: 'Badminton · Volleyball', what: 'Serve with purpose, sustain and vary a rally, read play and position early.', when: 'Assessed inside the Badminton unit.' },
+  'sk-inv':   { e: '🏀', t: 'Invasion games', m: 'Basketball · Football · Tchoukball', what: 'Pass, support, find space, and contribute to the team.', when: 'Assessed inside Tchoukball and the Tactics Cup.' },
+  'sk-str':   { e: '⚾', t: 'Striking & target', m: 'Accuracy & contact', what: 'Solid contact, reliable throw and catch, accuracy at a target.', when: 'Assessed inside the striking unit.' },
+  'ap-ready': { e: '✅', t: 'Be ready', m: 'Kit on, on time, set to learn', what: 'Prepared with full kit, on time, ready to start without reminders.', when: 'Every lesson, all year.' },
+  'ap-effort':{ e: '🔥', t: 'Best effort', m: 'Give it my all', what: 'Full effort and engagement the whole lesson, including in activities you don’t naturally enjoy.', when: 'Every lesson, all year.' },
+  'ap-growth':{ e: '🌱', t: 'Growth mindset', m: 'Keep trying; learn from setbacks', what: 'Embrace challenges, try new things, stay positive after setbacks.', when: 'Every lesson, all year.' },
+  'ap-team':  { e: '🙌', t: 'Great teammate', m: 'Include, encourage, communicate', what: 'Communicate positively, encourage others, help teammates take part.', when: 'Every lesson, all year.' },
+  'ap-manage':{ e: '🧘', t: 'Manage myself & my feelings', m: 'Listen · safe environment · take responsibility', what: 'Manage behaviour and emotions positively without reminders.', when: 'Every lesson, all year.' },
+  'rp-know':  { e: '🧠', t: 'Knowledge', m: 'Understanding fitness, health & safety', what: 'Best fit across: fitness concepts (K4), safe practice (K5), health.', when: 'Reported on Canvas, 1–7.' },
+  'rp-skill': { e: '🎯', t: 'Skills', m: 'Performing movements & using them in games', what: 'Best fit across: fundamental skills (S1), game skills (S1/S3), planning (S2), team contribution (S4).', when: 'Reported on Canvas, 1–7.' },
+  'rp-ct':    { e: '🔄', t: 'Concept transfer', m: 'Using what you know in new sports & situations', what: 'Best fit across: Tactics Cup transfer (C2), meaningful participation (C1), health decisions (C3).', when: 'Reported on Canvas, 1–7.' }
+};
+
 // ═══════════════ views ═══════════════
-let state = null;
+let state = null, view = 'profile';
 
 function avatar(st, cls) {
   const ini = esc(st.initials || '?');
   if (st.photoUrl) return '<span class="' + cls + '"><img src="' + esc(st.photoUrl) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + ini + '\'"></span>';
   return '<span class="' + cls + '">' + ini + '</span>';
 }
+function track(cls, n) { let s = ''; for (let i = 0; i < n; i++) s += '<i></i>'; return '<div class="track">' + s + '</div>'; }
+function tile(cls, key, em, name, sub, lab) {
+  return '<button type="button" class="tile ' + cls + '" data-ov="' + key + '"><span class="plus">⊕</span><div class="tnrow"><span class="em">' + em + '</span><span class="tn">' + esc(name) + '</span></div><div class="tsub">' + esc(sub) + '</div>' + track(cls, 4) + '<div class="tracklab">' + esc(lab) + '</div></button>';
+}
+function mtile(key, em, name, sub, unit) {
+  return '<button type="button" class="tile a-fit" data-ov="' + key + '"><span class="plus">⊕</span><div class="tnrow"><span class="em">' + em + '</span><span class="tn">' + esc(name) + '</span></div><div class="tsub">' + esc(sub) + '</div><div class="measure">—<small>' + esc(unit) + '</small></div></button>';
+}
+function band(key, em, name) {
+  return '<button type="button" class="band" data-ov="' + key + '"><span class="plus">⊕</span><div class="bn">' + em + ' ' + esc(name) + '</div><div class="btrack"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="blab">not yet reported</div></button>';
+}
 
-function studentView(b) {
-  const st = b.student, styles = b.styles;
-  const chosen = st.style && SKINS[st.style] ? st.style : '';
+function profileView(b) {
+  const st = b.student, styles = b.styles, k = st.style, skin = SKINS[k];
+  const fund = FUND.map(([key, em]) => '<button type="button" class="tile a-fund" data-ov="fund-' + key + '"><span class="plus">⊕</span><div class="tnrow"><span class="em">' + em + '</span><span class="tn">' + esc(RUBRICS.ladders[key].name) + '</span></div><div class="tsub">building block</div>' + track('a-fund', 4) + '<div class="rung">Level — of 4 · first Combine</div></button>').join('');
+  return '<div class="wrap">' +
+    '<div class="topline"><span class="demo-tag">Hi ' + esc(st.first) + ' · your profile fills in through the year · tap any tile</span><span class="yearlab">GRADE 8 PE · ' + esc(b.config.yearLabel) + '</span></div>' +
+    '<div class="cardteaser">' + avatar(st, 'ct-av') +
+      '<div class="ct-id"><div class="ct-name">' + esc(st.name) + ' <span class="ct-tier">◆ BRONZE</span></div>' + (st.klass ? '<div class="ct-sub">' + esc(st.klass) + '</div>' : '') +
+      '<div class="ct-arch">' + (skin ? skin.e + ' ' + esc(styles[k]).toUpperCase() : '✨ PICK YOUR PE STYLE') + '</div></div>' +
+      '<div class="ct-stats"><div><b>—</b><span>Mile</span></div><div><b>—</b><span>Skills</span></div><div><b>—</b><span>Effort</span></div></div>' +
+      '<button type="button" class="ct-btn' + (k ? '' : ' pulse') + '" id="tocard">' + (k ? 'View my card ↗' : 'Build my card ↗') + '</button>' +
+    '</div>' +
+    '<div class="goals"><div class="hd">⭐ Working towards</div><div class="empty">Your goals for fitness, skills and participation appear here after the September Combine.</div></div>' +
+    '<h3 class="sec sec-glance"><span class="em">👀</span> At a glance <span class="tap">· tap to open</span></h3><p class="seclede">The whole picture in one look — position, not scores.</p>' +
+    '<div class="grid4">' + tile('a-fit', 'gl-fit', '🏃', 'Fitness', 'from September', 'at the Combine') + tile('a-fund', 'gl-fund', '🧩', 'Fundamental skills', '9 building blocks', 'Level 1 to 4') + tile('a-ap', 'gl-ap', '🤝', 'Participation', 'all year', 'your five keys') + tile('a-skill', 'gl-know', '🧠', 'Understanding', 'use it in new games', 'Tactics Cup') + '</div>' +
+    '<h3 class="sec sec-fit"><span class="em">🏃</span> My fitness <span class="tap">· tap a part</span></h3><p class="seclede">Physical capacities — measured three times a year. Records that move.</p>' +
+    '<button type="button" class="fhero" data-ov="fit-cv"><div class="fx">🫀</div><div class="fm"><div class="n">Cardiovascular endurance</div><div class="s">Heart &amp; lung staying power · the mile run</div></div><div class="fv">—<span>September Combine</span></div></button>' +
+    '<div class="grid3">' + mtile('fit-me', '💪', 'Muscular endurance', 'push-ups · sit-to-stand', '') + mtile('fit-pw', '💥', 'Power', 'broad jump', 'cm') + mtile('fit-sp', '⚡', 'Speed', '40m sprint', 's') + '</div>' +
+    '<h3 class="sec sec-fund"><span class="em">🧩</span> Fundamental skills <span class="tap">· self → peer → teacher · tap a skill</span></h3><p class="seclede">Nine building blocks, each a 4-level ladder. Same test every Combine, so your level climbs over the year.</p>' +
+    '<div class="grid3">' + fund + '</div>' +
+    '<h3 class="sec sec-skill"><span class="em">🎯</span> Game skills <span class="tap">· in real games</span></h3><p class="seclede">The fundamentals, applied in a game. Assessed inside the units.</p>' +
+    '<div class="grid3">' + tile('a-skill', 'sk-net', '🏸', 'Net & wall', 'badminton · volleyball', 'coming') + tile('a-skill', 'sk-inv', '🏀', 'Invasion', 'basketball · football', 'coming') + tile('a-skill', 'sk-str', '⚾', 'Striking & target', 'accuracy & contact', 'coming') + '</div>' +
+    '<h3 class="sec sec-ap"><span class="em">🤝</span> Active participation <span class="tap">· all year</span></h3><p class="seclede">Your biggest all-year story — how you show up, tracked through every unit.</p>' +
+    '<div class="grid3">' + tile('a-ap', 'ap-ready', '✅', 'Be ready', 'set to learn', 'all year') + tile('a-ap', 'ap-effort', '🔥', 'Best effort', 'give it my all', 'all year') + tile('a-ap', 'ap-growth', '🌱', 'Growth mindset', 'learn from setbacks', 'all year') + tile('a-ap', 'ap-team', '🙌', 'Great teammate', 'include & encourage', 'all year') + tile('a-ap', 'ap-manage', '🧘', 'Manage myself & feelings', 'listen · safe space', 'all year') + '</div>' +
+    '<h3 class="sec sec-rep"><span class="em">🧠</span> My report picture <span class="tap">· tap for how it’s built</span></h3><p class="seclede">The three grades on your Canvas report — a best fit across the descriptors.</p>' +
+    '<div class="grid3">' + band('rp-know', '🧠', 'Knowledge') + band('rp-skill', '🎯', 'Skills') + band('rp-ct', '🔄', 'Concept transfer') + '</div>' +
+    '<div class="foot"><span class="arrow">↻</span><div><b>How this grows:</b> September sets the baseline; the same measures repeat in January and May. Always <b>you vs. your past self</b> — and it maps straight to your report.</div></div>' +
+    (b.alsoTeacher ? '<p class="small">You are on the Teachers tab too, so this is what a student sees.</p>' : '') +
+  '</div>';
+}
+
+function cardView(b) {
+  const st = b.student, styles = b.styles, chosen = st.style;
   const pick = ORDER.filter(k => styles[k]).map(k => {
     const s = SKINS[k];
     return '<button type="button" class="sbtn' + (k === chosen ? ' sel' : '') + '" data-k="' + k + '" aria-pressed="' + (k === chosen) + '"><span class="se">' + s.e + '</span><div class="sn">' + esc(styles[k]) + '</div><div class="sd">' + esc(s.d) + '</div></button>';
   }).join('');
   return '<div class="wrap">' +
-    '<div class="hero"><div class="k">GRADE 8 PE · ' + esc(b.config.yearLabel) + '</div>' +
-      '<h1>Hi ' + esc(firstName(st.name)) + ', build your Athlete Card</h1>' +
-      '<p>Choose your PE Style and make it yours. Your card grows all year.</p>' +
-      '<div class="who">' + avatar(st, 'av') + '<div class="t"><div class="n">' + esc(st.name) + '</div><div class="s">' + (st.klass ? 'Class ' + esc(st.klass) + ' · ' : '') + 'signed in with your FIS account</div></div></div>' +
-    '</div>' +
+    '<button type="button" class="back" id="toprofile">← Back to my profile</button>' +
+    '<div class="hero"><div class="k">GRADE 8 PE · ' + esc(b.config.yearLabel) + '</div><h1>Hi ' + esc(st.first) + ', build your Athlete Card</h1><p>Choose your PE Style and make it yours. Your card grows all year.</p></div>' +
     '<div class="grid">' +
       '<div><div class="step">1 · Choose your style <span class="saved" id="saved">' + (chosen ? '✓ saved' : '') + '</span></div><div class="styles" id="styles">' + pick + '</div></div>' +
       '<div class="cardstage"><div class="card" id="card"><div class="cinner">' +
         '<div class="chd"><span>FIS · PE ATHLETE · ' + esc(b.config.yearLabel) + '</span><span class="ctier">BRONZE</span></div>' +
-        '<div class="cwho">' + avatar(st, 'cav') + '<div><div class="cname">' + esc(st.name) + '</div>' + (st.klass ? '<div class="cclass">Class ' + esc(st.klass) + '</div>' : '') + '</div></div>' +
-        '<div class="crib"><span id="archt">PICK A STYLE</span><span id="arche">✨</span></div>' +
-        '<div class="crad" id="rad"></div>' +
+        '<div class="cwho">' + avatar(st, 'cav') + '<div><div class="cname">' + esc(st.name) + '</div>' + (st.klass ? '<div class="cclass">' + esc(st.klass) + '</div>' : '') + '</div></div>' +
+        '<div class="crib"><span id="archt">' + (chosen ? esc(styles[chosen]).toUpperCase() : 'PICK A STYLE') + '</span><span id="arche">' + (chosen ? SKINS[chosen].e : '✨') + '</span></div>' +
+        '<div class="crad" id="rad">' + radar(SKINS[chosen] || DEFAULT_SKIN) + '</div>' +
         '<div class="cstat"><div><b>—</b><span>Mile</span></div><div><b>—</b><span>Skills</span></div><div><b>—</b><span>Effort</span></div></div>' +
         '<div class="cbadge" aria-label="Badges you can earn"><span>🏃</span><span>📈</span><span>🔥</span><span>⭐</span></div>' +
         '<div class="cfoot">◆ Your card levels up as you grow ◆</div>' +
       '</div></div><div class="cardhint">Your style is your choice. None is "better": it sets your card’s colour and identity.</div></div>' +
     '</div>' +
-    '<div class="glance"><div class="step">Your profile · fills in this year</div><div class="crow">' +
-      tile('🏃', 'Fitness', 'from September', 'at the Combine') + tile('🧩', 'Fundamental skills', '9 building blocks', 'Level 1 to 4') +
-      tile('🤝', 'Participation', 'all year', 'your five keys') + tile('🧠', 'Understanding', 'use it in new games', 'Tactics Cup') +
-    '</div></div>' +
-    '<div class="coming"><h2>What’s coming this year</h2><p class="sub">Here’s how your card fills up and levels up.</p><div class="crow">' +
-      '<div class="cc"><div class="ci">📊</div><h3>The Combine</h3><p>Measure your fitness and skills three times a year. Watch your own numbers climb.</p></div>' +
-      '<div class="cc"><div class="ci">🧩</div><h3>Skill ladders</h3><p>Nine building blocks, four levels each. Self, peer, then teacher signs you off.</p></div>' +
-      '<div class="cc"><div class="ci">🤝</div><h3>Participation</h3><p>How you show up, all year. Your five keys, tracked as you grow.</p></div>' +
-      '<div class="cc"><div class="ci">🏅</div><h3>Level up</h3><p>Earn badges and climb Bronze to Silver to Gold by growing, not by ranking.</p></div>' +
-    '</div></div>' +
-    '<div class="foot"><span class="arrow">↻</span><div><b>How this grows:</b> September sets the baseline; the same measures repeat in January and May. Always <b>you vs. your past self</b>.</div></div>' +
-    (b.alsoTeacher ? '<p class="small">You are on the Teachers tab too, so this is what a student sees.</p>' : '') +
+    '<div class="done"><button type="button" class="ct-btn" id="toprofile2">Done · back to my profile ↗</button></div>' +
   '</div>';
-}
-function tile(em, name, sub, lab) {
-  return '<div class="tile"><div class="tnrow"><span class="em">' + em + '</span><span class="tn">' + esc(name) + '</span></div><div class="tsub">' + esc(sub) + '</div><div class="track"><i></i><i></i><i></i><i></i></div><div class="tracklab">' + esc(lab) + '</div></div>';
 }
 
 function message(big, title, body, extra) {
@@ -124,12 +175,28 @@ function otherView(b) {
   }
 }
 
+// ═══════════════ overlay ═══════════════
+function openOv(k) {
+  let html = '<button class="x" type="button" data-close="1">✕</button>';
+  if (k.startsWith('fund-')) {
+    const key = k.slice(5), lad = RUBRICS.ladders[key], em = (FUND.find(f => f[0] === key) || ['', '🧩'])[1];
+    html += '<h4>' + em + ' ' + esc(lad.name) + '</h4><div class="om">Fundamental skill · 4-level ladder · cleared self → peer → teacher</div>';
+    lad.levels.forEach((t, i) => { html += '<div class="lad"><span class="lv">L' + (i + 1) + '</span><span>' + esc(t) + '</span></div>'; });
+    html += '<div class="ovfeeds"><b>Not yet tested.</b> Your first level comes from the September Combine, then Jan → May.</div>';
+  } else {
+    const d = D[k]; if (!d) return;
+    html += '<h4>' + d.e + ' ' + esc(d.t) + '</h4><div class="om">' + esc(d.m) + '</div>' +
+      '<div class="ovnow"><div class="l">WHAT THIS IS</div><div class="t">' + esc(d.what) + '</div></div>' +
+      '<div class="ovnext"><div class="l">↗ WHEN IT FILLS IN</div><div class="t">' + esc(d.when) + '</div></div>';
+  }
+  $('#ovcard').innerHTML = html; $('#ov').classList.add('show');
+}
+function closeOv() { $('#ov').classList.remove('show'); }
+
 // ═══════════════ interactions ═══════════════
 function applySkin(k) {
   const s = SKINS[k]; if (!s) return;
-  const r = document.documentElement.style;
-  r.setProperty('--ink1', s.ink[0]); r.setProperty('--ink2', s.ink[1]); r.setProperty('--ink3', s.ink[2]);
-  r.setProperty('--acc', s.acc); r.setProperty('--accs', s.accs); r.setProperty('--rib', s.rib);
+  setSkin(k);
   $('#archt').textContent = state.styles[k].toUpperCase(); $('#arche').textContent = s.e;
   $('#rad').innerHTML = radar(s);
   document.querySelectorAll('.sbtn').forEach(b => { const on = b.dataset.k === k; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
@@ -146,20 +213,37 @@ async function choose(k) {
     toast('Saved. You’re ' + state.styles[k] + '.');
   } catch (e) {
     saved.textContent = prev ? '✓ saved' : '';
-    if (prev) applySkin(prev); else { $('#archt').textContent = 'PICK A STYLE'; $('#arche').textContent = '✨'; document.querySelectorAll('.sbtn').forEach(b => { b.classList.remove('sel'); b.setAttribute('aria-pressed', 'false'); }); }
+    if (prev) applySkin(prev); else { setSkin(''); $('#archt').textContent = 'PICK A STYLE'; $('#arche').textContent = '✨'; $('#rad').innerHTML = radar(DEFAULT_SKIN); document.querySelectorAll('.sbtn').forEach(b => { b.classList.remove('sel'); b.setAttribute('aria-pressed', 'false'); }); }
     toast('Couldn’t save: ' + e.message, true);
   } finally { document.querySelectorAll('.sbtn').forEach(b => b.disabled = false); }
 }
 
+function show(v) {
+  view = v;
+  const app = $('#app');
+  document.body.classList.toggle('dark', v === 'card');
+  setSkin(state.student.style);
+  if (v === 'card') {
+    app.innerHTML = cardView(state);
+    $('#styles').addEventListener('click', e => { const btn = e.target.closest('.sbtn'); if (btn) choose(btn.dataset.k); });
+    $('#toprofile').addEventListener('click', () => show('profile'));
+    $('#toprofile2').addEventListener('click', () => show('profile'));
+  } else {
+    app.innerHTML = profileView(state);
+    $('#tocard').addEventListener('click', () => show('card'));
+    app.addEventListener('click', e => { const t = e.target.closest('[data-ov]'); if (t) openOv(t.dataset.ov); });
+  }
+  window.scrollTo(0, 0);
+}
+
 function render(b) {
   state = b;
-  const app = $('#app');
-  if (b.role !== 'student') { app.innerHTML = otherView(b); return; }
-  app.innerHTML = studentView(b);
-  $('#rad').innerHTML = radar(SKINS[b.student.style] || SKINS.competitor);
-  if (b.student.style) applySkin(b.student.style);
-  $('#styles').addEventListener('click', e => { const btn = e.target.closest('.sbtn'); if (btn) choose(btn.dataset.k); });
+  if (b.role !== 'student') { $('#app').innerHTML = otherView(b); return; }
+  show(b.student.style ? 'profile' : 'card'); // first visit goes straight to "build your card"
 }
+
+$('#ov').addEventListener('click', e => { if (e.target === e.currentTarget || e.target.closest('[data-close]')) closeOv(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOv(); });
 
 async function main() {
   try { render(await call('bootstrap')); }

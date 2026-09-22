@@ -1,6 +1,6 @@
 # Plan — G8 PE Profile
 
-Status: **v1 scaffolded and passing local checks; not yet deployed.** Last updated 2026-09-22.
+Status: **v1 deployed to the FIS Sheet and working for the owner account; profile look + photo added.** Last updated 2026-09-22.
 
 ## Decisions taken (and why)
 
@@ -32,11 +32,14 @@ Status: **v1 scaffolded and passing local checks; not yet deployed.** Last updat
 
 ### v1 — sign-in → greet → pick style (saved) → teaser  ✅ scaffolded
 - [x] Server: tabs, config, identity, bootstrap (own row only), saveStyle/saveGoal, menu, retention wipe
-- [x] Client: greeting with avatar/initials, six-style picker with live card reskin, saved indicator, teaser tiles, "what's coming"
+- [x] Client: profile page in the mockup's look (teaser card strip, goals, at-a-glance, fitness, nine skill ladders from the Rubric Bank, game skills, participation, report bands, tap-to-open overlays) with every section in its "fills in at the Combine" state; "Build my card" screen with the six-style picker and live reskin; first visit lands on the builder, later visits on the profile
+- [x] Roster names in "Last, First" form: greet by first name, ignore the initial
+- [x] Google photo: People API, then Admin Directory fallback; `src/appsscript.photo.json` turns it on
 - [x] Non-student screens: teacher, not-on-list, wrong domain, anonymous, load error
 - [x] Dev: fake Sheets runtime, browser preview with synthetic roster, single-file build, 29 server checks, 14 browser smoke checks
 - [x] Docs: README (deploy), PRIVACY (for DP lead), this plan, CLAUDE.md
-- [ ] **Deploy to a test Sheet in FIS Workspace; run the four checks above with dummy accounts**
+- [x] Deployed to the FIS Sheet; owner sees own profile (check 1 & 2 pass for a teacher account)
+- [ ] Confirm with one **student** account, and enable the photo via `appsscript.photo.json` (check 3)
 - [ ] Share `PRIVACY.md` with the DP lead; record the answers to its six questions
 - [ ] Go-live: fill Students, share the `/exec` link
 

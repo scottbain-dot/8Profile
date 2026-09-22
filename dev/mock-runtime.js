@@ -23,7 +23,7 @@
 
   const ROSTER = [
     ['sample.one@example.edu',   'Sample One',    '8A'],
-    ['sample.two@example.edu',   'Sample Two',    '8A'],
+    ['sample.two@example.edu',   'Two, Sample',   '8A'], // "Last, First" as the school system exports it
     ['sample.three@example.edu', 'Sample Three',  '8B'],
     ['sample.four@example.edu',  'Sample Four',   '8B'],
     ['teacher@example.edu',      'Teacher Test',  '8B'] // the owner, also on the roster to test the student view

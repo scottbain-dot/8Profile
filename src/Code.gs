@@ -136,13 +136,32 @@ function requireStudent_(cfg) {
   if (id.role !== 'student') throw new Error('Not signed in with a school account that is on the class list');
   return id;
 }
+// Roster names arrive as "Last, First" from the school system (sometimes with
+// only an initial before the comma) or as "First Last". The page greets by
+// first name and shows the first name on the card; the part before a comma is
+// ignored. Without a comma the full name is kept for display.
+function nameParts_(raw) {
+  var name = str_(raw).replace(/\s+/g, ' ');
+  var first, display;
+  if (name.indexOf(',') !== -1) {
+    first = str_(name.split(',').slice(1).join(',')).split(' ')[0] || str_(name.split(',')[0]);
+    display = first;
+  } else {
+    first = name.split(' ')[0] || '';
+    display = name;
+  }
+  return { first: first, display: display, initials: initials_(display) };
+}
 function initials_(name) {
   var p = str_(name).split(/\s+/);
   return ((p[0] || '').charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : '')).toUpperCase();
 }
 
-// Google directory photo, runtime only. Off unless Config photo_lookup = TRUE and
-// the People API advanced service is enabled (Apps Script editor → Services → People API).
+// Google directory photo, runtime only. Off unless Config photo_lookup = TRUE.
+// Tries, in order, whichever advanced services are enabled in the editor
+// (Services → +): People API, then Admin SDK Directory (domain_public view,
+// which any domain user may read when directory sharing is on). The URL is
+// handed to the browser, which loads the image from Google. Nothing is stored.
 // Any failure (service off, no directory access, no photo) falls back to initials.
 function photoUrl_(cfg, email) {
   if (!bool_(cfg.photo_lookup)) return '';
@@ -156,6 +175,10 @@ function photoUrl_(cfg, email) {
       var photos = people[i].photos || [];
       for (var j = 0; j < photos.length; j++) if (photos[j].url && !photos[j].default) return photos[j].url;
     }
+  } catch (e) { /* try the next service */ }
+  try {
+    var u = AdminDirectory.Users.get(email, { viewType: 'domain_public', projection: 'basic' });
+    if (u && u.thumbnailPhotoUrl && !u.isDefaultPhoto) return u.thumbnailPhotoUrl;
   } catch (e) { /* fall back to initials */ }
   return '';
 }
@@ -194,10 +217,12 @@ function bootstrap() {
   };
   if (id.role === 'student') {
     var p = profileRow_(id.email) || {};
+    var nm = nameParts_(id.name);
     out.student = {
-      name: id.name,
+      name: nm.display,
+      first: nm.first,
       klass: id.klass,
-      initials: initials_(id.name),
+      initials: nm.initials,
       style: STYLES[str_(p.Style)] ? str_(p.Style) : '',
       goal: str_(p.Goal),
       photoUrl: photoUrl_(cfg, id.email)

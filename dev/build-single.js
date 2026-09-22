@@ -7,8 +7,9 @@ const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
 const read = p => fs.readFileSync(path.join(root, p), 'utf8');
+require('child_process').execFileSync(process.execPath, [path.join(__dirname, 'build-rubrics.js')], { stdio: 'inherit' });
 const code = read('src/Code.gs');
-const html = { Index: read('src/Index.html'), Styles: read('src/Styles.html'), App: read('src/App.html') };
+const html = { Index: read('src/Index.html'), Styles: read('src/Styles.html'), Rubrics: read('src/Rubrics.html'), App: read('src/App.html') };
 // JSON.stringify gives a valid JS string literal; break "</script>" so the
 // embedded App.html can never terminate a script tag if viewed as HTML.
 const lit = s => JSON.stringify(s).replace(/<\/script>/g, '<\\/script>');
@@ -20,6 +21,7 @@ const out = code +
   'EMBEDDED_HTML = {\n' +
   '  Index: ' + lit(html.Index) + ',\n' +
   '  Styles: ' + lit(html.Styles) + ',\n' +
+  '  Rubrics: ' + lit(html.Rubrics) + ',\n' +
   '  App: ' + lit(html.App) + '\n' +
   '};\n';
 fs.mkdirSync(path.join(root, 'dist'), { recursive: true });
