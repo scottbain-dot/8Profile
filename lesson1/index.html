@@ -9,7 +9,7 @@
  --disp:"Archivo",system-ui,sans-serif;--body:"Inter",system-ui,sans-serif;}
 *{box-sizing:border-box}html,body{margin:0;height:100%;font-family:var(--body);background:var(--paper);color:var(--ink)}
 .deck{position:fixed;inset:0;height:100vh;height:100dvh;width:100vw;overflow:hidden;background:var(--paper)}
-.slide{position:fixed;inset:0;height:100vh;height:100dvh;width:100vw;display:none;flex-direction:column;justify-content:center;padding:5vh 6vw;background:var(--paper);animation:fade .45s}
+.slide{position:fixed;inset:0;height:100vh;height:100dvh;width:100vw;display:none;flex-direction:column;justify-content:center;padding:5vh 5vw;background:var(--paper);animation:fade .45s}
 .slide.on{display:flex}@keyframes fade{from{opacity:0;transform:scale(.99) translateY(10px)}to{opacity:1;transform:none}}
 .center{align-items:center;text-align:center}
 .phase{display:inline-flex;align-items:center;gap:8px;font-family:var(--disp);font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:clamp(13px,1.4vw,18px);color:#fff;background:var(--maroon);padding:5px 14px;border-radius:999px;margin-bottom:16px;align-self:flex-start}
@@ -17,9 +17,9 @@
 .phase.fit{background:var(--fit)}.phase.fund{background:var(--fund)}.phase.think{background:var(--rep)}.phase.go{background:var(--ap)}
 h1{font-family:var(--disp);font-weight:900;font-size:clamp(50px,9vw,140px);line-height:.92;margin:0;letter-spacing:-.02em}
 h2{font-family:var(--disp);font-weight:800;font-size:clamp(38px,6.6vw,92px);line-height:1;margin:0 0 14px;color:var(--maroon)}
-.lead{font-size:clamp(20px,2.5vw,36px);line-height:1.3;max-width:26ch;color:var(--ink)}
-.lead.wide{max-width:42ch}
-.sub{font-size:clamp(17px,2vw,27px);color:var(--muted);margin-top:12px;max-width:40ch}
+.lead{font-size:clamp(20px,2.5vw,40px);line-height:1.3;max-width:30ch;color:var(--ink)}
+.lead.wide{max-width:44ch}
+.sub{font-size:clamp(17px,2vw,30px);color:var(--muted);margin-top:12px;max-width:40ch}
 b.hl{color:var(--maroon)}
 /* title */
 .title{background:radial-gradient(circle at 50% 20%,#8a2436,#6f1d2c 45%,#3f0e17);color:#fff}
@@ -27,64 +27,87 @@ b.hl{color:var(--maroon)}
 .kick{font-family:var(--disp);font-weight:800;letter-spacing:.32em;color:var(--gold);font-size:clamp(15px,1.8vw,24px);margin-bottom:10px}
 .title .ic{font-size:clamp(44px,6vw,80px);margin-bottom:6px}
 /* objectives */
-.obj{list-style:none;padding:0;margin:18px 0 0;max-width:20ch;text-align:left}
-.obj li{font-size:clamp(19px,2.3vw,30px);font-weight:600;padding:13px 0 13px 46px;position:relative;border-top:2px solid var(--line)}
+.obj{list-style:none;padding:0;margin:clamp(14px,3vh,34px) 0 0;max-width:min(880px,84vw);text-align:left}
+.obj li{font-size:clamp(19px,2.6vw,40px);font-weight:600;padding:clamp(12px,2vh,22px) 0 clamp(12px,2vh,22px) 1.7em;position:relative;border-top:2px solid var(--line)}
 .obj li:first-child{border-top:none}
-.obj li::before{content:attr(data-e);position:absolute;left:0;font-size:30px;line-height:1}
+.obj li::before{content:attr(data-e);position:absolute;left:0;top:.55em;font-size:1.1em;line-height:1}
 /* think */
-.think-q{font-family:var(--disp);font-weight:900;font-size:clamp(34px,5.5vw,76px);line-height:1.02;color:var(--maroon);max-width:16ch;margin:6px 0}
+.think-q{font-family:var(--disp);font-weight:900;font-size:clamp(34px,5.5vw,88px);line-height:1.02;color:var(--maroon);max-width:16ch;margin:6px 0}
 .tt{display:inline-flex;gap:10px;align-items:center;background:#fff;border:2px solid var(--rep);color:var(--rep);border-radius:999px;padding:9px 20px;font-family:var(--disp);font-weight:800;font-size:clamp(15px,1.7vw,22px);margin-top:20px}
 /* big idea + radar */
-.idea-row{display:flex;gap:5vw;align-items:center;justify-content:center;flex-wrap:wrap}
+.idea-row{display:flex;gap:6vw;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:clamp(6px,2vh,24px)}
+.idea-row svg{width:min(460px,30vw,55vh);height:auto}
 .vs{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center}
 .vs .x{font-family:var(--disp);font-weight:900;font-size:clamp(24px,3.4vw,50px);padding:8px 20px;border-radius:14px}
 .vs .no{background:#f0e2e2;color:#b04a4a;text-decoration:line-through}.vs .yes{background:var(--maroon);color:#fff}.vs .arrow{font-size:clamp(22px,2.6vw,38px);color:var(--muted)}
 /* component tiles */
-.grid{display:grid;gap:16px;margin-top:6px;width:100%;max-width:1120px}
-.g2{grid-template-columns:1fr 1fr}@media(max-width:860px){.g2{grid-template-columns:1fr}}
-.tile{background:#fff;border:1px solid var(--line);border-radius:20px;padding:20px 22px;display:flex;gap:16px;align-items:flex-start;border-left:6px solid var(--fit)}
-.tile .em{font-size:44px;line-height:1;flex:none}
-.tile h3{font-family:var(--disp);font-weight:800;font-size:clamp(20px,2.1vw,28px);margin:0 0 3px}
-.tile p{font-size:clamp(14px,1.5vw,19px);color:var(--ink);margin:0;line-height:1.35}
-.tile .test{font-size:clamp(12px,1.3vw,16px);color:var(--fit);font-weight:700;margin-top:7px;font-family:var(--disp);text-transform:uppercase;letter-spacing:.03em}
+.grid{display:grid;gap:clamp(14px,1.6vw,28px);margin-top:clamp(6px,2vh,24px);width:100%;max-width:min(1500px,92vw)}
+.g2{grid-template-columns:1fr 1fr}@media(max-width:860px){.g2{grid-template-columns:1fr}.mcard{width:min(200px,40vw)}.pmock{display:none}}
+.tile{background:#fff;border:1px solid var(--line);border-radius:22px;padding:clamp(18px,2.4vh,34px) clamp(20px,2vw,36px);display:flex;gap:clamp(14px,1.4vw,26px);align-items:flex-start;border-left:6px solid var(--fit)}
+.tile .em{font-size:clamp(44px,4.4vw,80px);line-height:1;flex:none}
+.tile h3{font-family:var(--disp);font-weight:800;font-size:clamp(20px,2.3vw,40px);margin:0 0 4px}
+.tile p{font-size:clamp(14px,1.55vw,26px);color:var(--ink);margin:0;line-height:1.35}
+.tile .test{font-size:clamp(12px,1.25vw,20px);color:var(--fit);font-weight:700;margin-top:7px;font-family:var(--disp);text-transform:uppercase;letter-spacing:.03em}
 /* skills */
-.skgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:860px;margin-top:6px;width:100%}
-.sk{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 10px;text-align:center;border-bottom:5px solid var(--fund)}
-.sk .em{font-size:32px}.sk .n{font-family:var(--disp);font-weight:800;font-size:clamp(15px,1.6vw,20px);margin-top:6px}
+.skgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(12px,1.4vw,24px);max-width:min(1300px,92vw);margin-top:clamp(6px,2vh,24px);width:100%}
+.sk{background:#fff;border:1px solid var(--line);border-radius:18px;padding:clamp(14px,2.2vh,30px) 10px;text-align:center;border-bottom:5px solid var(--fund)}
+.sk .em{font-size:clamp(32px,4vw,64px);line-height:1}.sk .n{font-family:var(--disp);font-weight:800;font-size:clamp(15px,1.8vw,30px);margin-top:8px}
 /* combine */
 .checks{display:flex;gap:14px;justify-content:center;margin-top:18px;flex-wrap:wrap}
-.chk{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 24px;text-align:center}
-.chk b{font-family:var(--disp);font-weight:900;font-size:clamp(24px,3vw,40px);color:var(--fit);display:block}.chk span{font-size:14px;color:var(--muted)}
+.chk{background:#fff;border:1px solid var(--line);border-radius:18px;padding:clamp(16px,2.4vh,30px) clamp(24px,2.6vw,48px);text-align:center;min-width:clamp(140px,14vw,260px)}
+.chk b{font-family:var(--disp);font-weight:900;font-size:clamp(24px,3.4vw,60px);color:var(--fit);display:block}.chk span{font-size:clamp(14px,1.2vw,20px);color:var(--muted)}
 /* activity */
 .act{background:var(--maroon);color:#fff}.act h2{color:#fff}
-.actbox{background:rgba(255,255,255,.09);border:1px solid rgba(231,182,75,.35);border-radius:20px;padding:24px 28px;max-width:860px;margin:16px auto 0;text-align:left}
-.actbox .q{font-family:var(--disp);font-weight:800;font-size:clamp(19px,2.2vw,28px);margin:0 0 14px;color:var(--gold)}
-.actrow{display:flex;gap:14px;align-items:flex-start;padding:11px 0;font-size:clamp(16px,1.8vw,23px);color:#fff;border-top:1px solid rgba(255,255,255,.14)}
+.actbox{background:rgba(255,255,255,.09);border:1px solid rgba(231,182,75,.35);border-radius:22px;padding:clamp(22px,3vh,36px) clamp(26px,2.6vw,48px);max-width:min(1100px,86vw);width:100%;margin:clamp(14px,2.4vh,28px) auto 0;text-align:left}
+.actbox .q{font-family:var(--disp);font-weight:800;font-size:clamp(19px,2.2vw,36px);margin:0 0 14px;color:var(--gold)}
+.actrow{display:flex;gap:14px;align-items:flex-start;padding:clamp(10px,1.6vh,18px) 0;font-size:clamp(16px,1.8vw,30px);color:#fff;border-top:1px solid rgba(255,255,255,.14)}
 .actrow:first-of-type{border-top:none}.actrow .num{font-family:var(--disp);font-weight:900;color:var(--gold);flex:none}
 .lights{display:flex;gap:10px;margin-top:8px;flex-wrap:wrap}
-.light{border-radius:12px;padding:7px 15px;font-weight:700;font-size:clamp(14px,1.5vw,19px)}
+.light{border-radius:12px;padding:7px 15px;font-weight:700;font-size:clamp(14px,1.5vw,24px)}
 .light.g{background:#1f9d57}.light.a{background:#e0a000}.light.r{background:#c0392b}
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.chip{background:rgba(255,255,255,.14);border-radius:999px;padding:6px 15px;font-size:clamp(14px,1.5vw,18px)}
-.canvas{margin-top:18px;font-family:var(--disp);font-weight:800;font-size:clamp(17px,1.9vw,24px);color:var(--gold);text-align:center}
+.chip{background:rgba(255,255,255,.14);border-radius:999px;padding:6px 15px;font-size:clamp(14px,1.5vw,22px)}
+.canvas{margin-top:clamp(16px,2.4vh,28px);font-family:var(--disp);font-weight:800;font-size:clamp(17px,1.9vw,30px);color:var(--gold);text-align:center}
 /* nav */
 .nav{position:fixed;bottom:16px;left:0;right:0;display:flex;justify-content:center;gap:14px;z-index:20}
 .dots{display:flex;gap:7px;align-items:center}.dot{width:9px;height:9px;border-radius:50%;background:#c9c1c0;cursor:pointer}.dot.on{background:var(--maroon)}
 .arrow{background:var(--maroon);color:#fff;border:none;width:40px;height:40px;border-radius:50%;font-size:18px;cursor:pointer;opacity:.92}
 .count{position:fixed;top:14px;right:18px;font-family:var(--disp);font-size:14px;color:var(--muted);z-index:20}
 
-  .prof{display:flex;gap:6vw;align-items:center;justify-content:center;flex-wrap:wrap}
-  .mcard{width:min(300px,80vw);border-radius:22px;padding:4px;background:linear-gradient(145deg,#f7dc8f,#c9982f 45%,#8a6a1e 60%,#f3d689);box-shadow:0 22px 54px rgba(0,0,0,.4),0 0 26px rgba(231,182,75,.5);animation:mfloat 5s ease-in-out infinite}
+  .prof{display:flex;gap:4vw;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:clamp(6px,2vh,24px)}
+  .prof .ptext{max-width:min(620px,84vw);text-align:left;flex:1 1 380px}
+  .prof .ptext .lead{max-width:none}.prof .ptext .sub{max-width:none;margin-top:8px}
+  /* profile mock */
+  .pmock{width:min(560px,90vw,34vw);background:#fff;border:1px solid var(--line);border-radius:22px;padding:14px 16px;box-shadow:0 22px 54px rgba(0,0,0,.14);text-align:left;font-size:clamp(11px,.85vw,15px);flex:none}
+  .pm-strip{display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#22508c,#1d4577 55%,#0f2747);border:1px solid #c9982f;border-radius:14px;padding:10px 12px;color:#fff;margin-bottom:10px}
+  .pm-av{width:2.6em;height:2.6em;border-radius:50%;border:2px solid var(--gold);display:grid;place-items:center;font-family:var(--disp);font-weight:800;color:#cfe4fb;background:rgba(0,0,0,.25);flex:none}
+  .pm-id{flex:1;line-height:1.15}.pm-id b{font-family:var(--disp);font-size:1.35em;display:block}.pm-id span{font-size:.9em;opacity:.8}
+  .pm-btn{background:linear-gradient(145deg,#f3d689,#c9982f);color:#3a1008;font-family:var(--disp);font-weight:800;font-size:.95em;padding:.5em .9em;border-radius:9px;white-space:nowrap}
+  .pm-sec{font-family:var(--disp);font-weight:800;font-size:1.25em;margin:10px 0 6px}
+  .pm-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.pm-tiles.three{grid-template-columns:repeat(3,1fr)}
+  .pm-tile{background:var(--paper);border:1px solid var(--line);border-radius:11px;padding:8px 9px;display:flex;flex-direction:column;gap:5px}
+  .pm-tile span{font-weight:600;font-size:.95em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pm-tile em{font-style:normal;font-family:var(--disp);font-weight:700;font-size:.9em;color:var(--muted)}
+  .pm-tile strong{font-family:var(--disp);font-weight:800;font-size:1.5em;color:var(--fit);line-height:1}.pm-tile strong small{font-size:.55em;color:var(--muted);font-weight:500}
+  .pm-tile i{display:block;height:7px;border-radius:3px;background:linear-gradient(90deg,var(--c) 0 var(--p),#ece7e6 var(--p) 100%)}
+  .pm-tile i.t2{--p:50%}.pm-tile i.t3{--p:75%}.pm-tile i.t4{--p:100%}
+  .pm-tile i.fit{--c:var(--fit)}.pm-tile i.fund{--c:var(--fund)}.pm-tile i.ap{--c:var(--ap)}.pm-tile i.blue{--c:var(--blue)}
+  .pm-hero{display:flex;align-items:center;gap:10px;background:#fdecdc;border:1.5px solid var(--fit);border-radius:12px;padding:8px 11px;margin-bottom:7px}
+  .pm-hero>span{font-size:1.6em}.pm-hero div{flex:1;line-height:1.15}.pm-hero b{display:block;font-size:1.05em}.pm-hero div span{font-size:.85em;color:var(--muted)}
+  .pm-hero strong{font-family:var(--disp);font-weight:800;font-size:1.7em;color:var(--fit);line-height:1;text-align:right}.pm-hero strong small{display:block;font-size:.5em;color:var(--muted);font-weight:500}
+  .pcardrow{display:flex;gap:18px;align-items:center;margin-top:clamp(12px,2.4vh,26px);padding-top:clamp(12px,2vh,22px);border-top:2px solid var(--line)}
+  .pcardtext{flex:1;margin:0!important;font-size:clamp(15px,1.5vw,24px)!important}
+  .mcard{width:min(230px,42vw,13vw);flex:none;border-radius:22px;padding:4px;background:linear-gradient(145deg,#f7dc8f,#c9982f 45%,#8a6a1e 60%,#f3d689);box-shadow:0 22px 54px rgba(0,0,0,.4),0 0 26px rgba(231,182,75,.5);animation:mfloat 5s ease-in-out infinite}
   @keyframes mfloat{0%,100%{transform:translateY(0) rotate(-.5deg)}50%{transform:translateY(-8px) rotate(.5deg)}}
-  .mcin{background:linear-gradient(160deg,#7d2233,#6f1d2c 42%,#4a1019);border-radius:18px;padding:15px 17px;color:#fff;position:relative;overflow:hidden}
+  .mcin{background:linear-gradient(160deg,#22508c,#1d4577 42%,#0f2747);border-radius:18px;padding:10px 12px;font-size:11px;color:#fff;position:relative;overflow:hidden}
   .mcin::after{content:"";position:absolute;top:-60%;left:-75%;width:55%;height:220%;background:linear-gradient(115deg,transparent,rgba(255,255,255,.4),transparent);transform:rotate(9deg);animation:msweep 4.2s ease-in-out infinite}
   @keyframes msweep{0%{left:-75%}60%,100%{left:150%}}
   .mchd{display:flex;justify-content:space-between;font-family:var(--disp);font-weight:700;font-size:10px;color:var(--gold);position:relative;z-index:2}
   .mtier{background:linear-gradient(145deg,#f3d689,#c9982f);color:#3a1008;padding:1px 8px;border-radius:20px}
-  .mwho{font-family:var(--disp);font-weight:900;font-size:22px;margin-top:6px;position:relative;z-index:2}
-  .mrib{background:linear-gradient(90deg,#e7b64b,#f7dc8f);border-radius:8px;padding:5px 11px;font-family:var(--disp);font-weight:800;color:#3a1008;margin:9px 0;display:flex;justify-content:space-between;font-size:16px;position:relative;z-index:2}
+  .mwho{font-family:var(--disp);font-weight:900;font-size:16px;margin-top:6px;position:relative;z-index:2}
+  .mrib{background:linear-gradient(90deg,#8fbff0,#cfe4fb);border-radius:8px;padding:4px 9px;font-family:var(--disp);font-weight:800;color:#0c2747;margin:7px 0;display:flex;justify-content:space-between;font-size:12px;position:relative;z-index:2}
   .mbadge{display:flex;gap:8px;justify-content:center;margin-top:9px;position:relative;z-index:2}
-  .mbadge span{width:30px;height:30px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff3d6,#e7b64b 62%,#b9871f);display:grid;place-items:center;font-size:14px}
+  .mbadge span{width:24px;height:24px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff3d6,#e7b64b 62%,#b9871f);display:grid;place-items:center;font-size:14px}
   .mfoot{margin-top:9px;text-align:center;font-family:var(--disp);font-weight:700;font-size:10.5px;color:var(--gold);position:relative;z-index:2;border-top:1px solid rgba(231,182,75,.25);padding-top:7px}
 </style></head><body>
 <div class="deck" id="deck">
@@ -104,7 +127,7 @@ b.hl{color:var(--maroon)}
   <ul class="obj">
     <li data-e="🧩">Figure out the <b class="hl">parts</b> of fitness</li>
     <li data-e="🎯">Meet the <b class="hl">9 skills</b> we build all year</li>
-    <li data-e="🔮">Predict <b class="hl">your own</b> strengths &amp; work-ons</li>
+    <li data-e="🔮">Predict <b class="hl">your own</b> strengths &amp; work&#8209;ons</li>
   </ul>
 </section>
 
@@ -123,7 +146,7 @@ b.hl{color:var(--maroon)}
   <div class="idea-row">
     <div>
       <div class="vs"><span class="x no">FIT / UNFIT</span><span class="arrow">→</span><span class="x yes">a whole shape</span></div>
-      <p class="sub" style="margin-top:20px;max-width:22ch">Everyone's shape is different. You'll be strong in some parts and growing in others. <b class="hl">That's normal.</b></p>
+      <p class="sub" style="margin-top:20px;max-width:26ch">Everyone's shape is different. You'll be strong in some parts and growing in others. <b class="hl">That's normal.</b></p>
     </div>
     <svg width="min(300px,72vw)" height="240" viewBox="0 0 260 240" id="idearad"><polygon points="130.0,95.5 146.9,105.2 146.9,124.8 130.0,134.5 113.1,124.8 113.1,105.2" fill="none" stroke="#e0d7d5"/><polygon points="130.0,76.0 163.8,95.5 163.8,134.5 130.0,154.0 96.2,134.5 96.2,95.5" fill="none" stroke="#e0d7d5"/><polygon points="130.0,56.5 180.7,85.8 180.7,144.2 130.0,173.5 79.3,144.2 79.3,85.8" fill="none" stroke="#e0d7d5"/><polygon points="130.0,37.0 197.5,76.0 197.5,154.0 130.0,193.0 62.5,154.0 62.5,76.0" fill="none" stroke="#e0d7d5"/><text x="130.0" y="18.2" text-anchor="middle" style="font-family:Archivo;font-size:9px;font-weight:800;fill:#7a6f71">CARDIO</text><text x="216.5" y="68.1" text-anchor="start" style="font-family:Archivo;font-size:9px;font-weight:800;fill:#7a6f71">POWER</text><text x="216.5" y="167.9" text-anchor="start" style="font-family:Archivo;font-size:9px;font-weight:800;fill:#7a6f71">SPEED</text><text x="130.0" y="217.8" text-anchor="middle" style="font-family:Archivo;font-size:9px;font-weight:800;fill:#7a6f71">SKILLS</text><text x="43.5" y="167.9" text-anchor="end" style="font-family:Archivo;font-size:9px;font-weight:800;fill:#7a6f71">STRENGTH</text><text x="43.5" y="68.1" text-anchor="end" style="font-family:Archivo;font-size:9px;font-weight:800;fill:#7a6f71">AGILITY</text><polygon points="130.0,48.7 163.8,95.5 177.3,142.3 130.0,185.2 99.6,132.6 79.3,85.8" fill="rgba(111,29,44,.18)" stroke="#6f1d2c" stroke-width="3" stroke-linejoin="round"/><circle cx="130.0" cy="48.7" r="3.5" fill="#6f1d2c"/><circle cx="163.8" cy="95.5" r="3.5" fill="#6f1d2c"/><circle cx="177.3" cy="142.3" r="3.5" fill="#6f1d2c"/><circle cx="130.0" cy="185.2" r="3.5" fill="#6f1d2c"/><circle cx="99.6" cy="132.6" r="3.5" fill="#6f1d2c"/><circle cx="79.3" cy="85.8" r="3.5" fill="#6f1d2c"/></svg>
   </div>
@@ -180,19 +203,44 @@ b.hl{color:var(--maroon)}
 <!-- 8b YOUR PROFILE -->
 <section class="slide center">
   <div class="phase" style="background:var(--gold);color:#3a1008">🎴 Your profile</div>
-  <h2>It all builds YOUR card</h2>
+  <h2>It all builds YOUR profile</h2>
   <div class="prof">
-    <div class="mcard"><div class="mcin">
-      <div class="mchd"><span>FIS · PE ATHLETE · 26/27</span><span class="mtier">GOLD</span></div>
-      <div class="mwho">YOUR NAME</div>
-      <div class="mrib"><span>THE IMPROVER</span><span>📈</span></div>
-      <svg viewBox="0 0 300 180" width="100%" height="140"><polygon points="150.0,73.5 162.6,80.8 162.6,95.2 150.0,102.5 137.4,95.2 137.4,80.8" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,59.0 175.1,73.5 175.1,102.5 150.0,117.0 124.9,102.5 124.9,73.5" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,44.5 187.7,66.2 187.7,109.8 150.0,131.5 112.3,109.8 112.3,66.2" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,30.0 200.2,59.0 200.2,117.0 150.0,146.0 99.8,117.0 99.8,59.0" fill="none" stroke="rgba(255,255,255,.14)"/><text x="150.0" y="16.8" text-anchor="middle" style="font-family:Archivo;font-size:8px;font-weight:700;fill:rgba(255,255,255,.8)">STA</text><text x="214.3" y="53.9" text-anchor="start" style="font-family:Archivo;font-size:8px;font-weight:700;fill:rgba(255,255,255,.8)">STR</text><text x="214.3" y="128.1" text-anchor="start" style="font-family:Archivo;font-size:8px;font-weight:700;fill:rgba(255,255,255,.8)">SPD</text><text x="150.0" y="165.2" text-anchor="middle" style="font-family:Archivo;font-size:8px;font-weight:700;fill:rgba(255,255,255,.8)">SKL</text><text x="85.7" y="128.1" text-anchor="end" style="font-family:Archivo;font-size:8px;font-weight:700;fill:rgba(255,255,255,.8)">TEAM</text><text x="85.7" y="53.9" text-anchor="end" style="font-family:Archivo;font-size:8px;font-weight:700;fill:rgba(255,255,255,.8)">EFF</text><polygon points="150.0,44.5 177.6,72.0 180.1,105.4 150.0,122.8 114.8,108.3 109.8,64.8" fill="rgba(247,220,143,.32)" stroke="#ffe0b8" stroke-width="2.2"/></svg>
-      <div class="mbadge"><span>🏃</span><span>📈</span><span>🔥</span><span>⭐</span></div>
-      <div class="mfoot">◆ Levels up as you grow ◆</div>
-    </div></div>
-    <div style="max-width:16ch">
-      <p class="lead">Your fitness, your skills, your effort. All in <b class="hl">one place</b>.</p>
-      <p class="sub" style="max-width:18ch">It levels up as you grow, and soon <b class="hl">you'll build your own</b>.</p>
+    <div class="pmock" aria-label="Preview of My PE Profile">
+      <div class="pm-strip"><span class="pm-av">YN</span><div class="pm-id"><b>YOUR NAME</b><span>Class 8 · 🧭 THE EXPLORER</span></div><span class="pm-btn">View my card ↗</span></div>
+      <div class="pm-sec" style="color:var(--maroon)">👀 At a glance</div>
+      <div class="pm-tiles">
+        <div class="pm-tile"><span>🏃 Fitness</span><i class="t3 fit"></i><em>improving ↑</em></div>
+        <div class="pm-tile"><span>🧩 Skills</span><i class="t3 fund"></i><em>Level 3 ↑</em></div>
+        <div class="pm-tile"><span>🤝 Participation</span><i class="t3 ap"></i><em>Secure ↑</em></div>
+        <div class="pm-tile"><span>🧠 Understanding</span><i class="t2 blue"></i><em>Developing</em></div>
+      </div>
+      <div class="pm-sec" style="color:var(--fit)">🏃 My fitness</div>
+      <div class="pm-hero"><span>🫀</span><div><b>Cardio endurance</b><span>the mile run</span></div><strong>8:05 <small>from 9:12</small></strong></div>
+      <div class="pm-tiles three">
+        <div class="pm-tile"><span>💪 Muscular</span><strong>23 · 34</strong></div>
+        <div class="pm-tile"><span>💥 Power</span><strong>186<small>cm</small></strong></div>
+        <div class="pm-tile"><span>⚡ Speed</span><strong>6.6<small>s</small></strong></div>
+      </div>
+      <div class="pm-sec" style="color:var(--fund)">🧩 Fundamental skills</div>
+      <div class="pm-tiles three">
+        <div class="pm-tile"><span>🎯 Throw</span><i class="t3 fund"></i></div>
+        <div class="pm-tile"><span>🧤 Catch</span><i class="t3 fund"></i></div>
+        <div class="pm-tile"><span>🤸 Balance</span><i class="t4 fund"></i></div>
+      </div>
+    </div>
+    <div class="ptext">
+      <p class="lead">Your fitness, your skills, your effort. All in <b class="hl">one place</b>: <b class="hl">My PE Profile</b>.</p>
+      <p class="sub">It fills in at every Combine, so you watch <b class="hl">yourself</b> grow. Tap anything to see where you are and your next step.</p>
+      <div class="pcardrow">
+        <div class="mcard"><div class="mcin">
+          <div class="mchd"><span>FIS · PE ATHLETE · 26/27</span><span class="mtier">GOLD</span></div>
+          <div class="mwho">YOUR NAME</div>
+          <div class="mrib"><span>THE EXPLORER</span><span>🧭</span></div>
+          <svg viewBox="0 0 300 180" width="100%" height="110"><polygon points="150.0,73.5 162.6,80.8 162.6,95.2 150.0,102.5 137.4,95.2 137.4,80.8" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,59.0 175.1,73.5 175.1,102.5 150.0,117.0 124.9,102.5 124.9,73.5" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,44.5 187.7,66.2 187.7,109.8 150.0,131.5 112.3,109.8 112.3,66.2" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,30.0 200.2,59.0 200.2,117.0 150.0,146.0 99.8,117.0 99.8,59.0" fill="none" stroke="rgba(255,255,255,.14)"/><polygon points="150.0,44.5 177.6,72.0 180.1,105.4 150.0,122.8 114.8,108.3 109.8,64.8" fill="rgba(247,220,143,.32)" stroke="#ffe0b8" stroke-width="2.2"/></svg>
+          <div class="mbadge"><span>🏃</span><span>📈</span><span>🔥</span><span>⭐</span></div>
+        </div></div>
+        <p class="sub pcardtext">…and your <b class="hl">personal athlete card</b>: your style, your shape, your badges. It levels up as you grow, and <b class="hl">you'll build yours today</b>.</p>
+      </div>
     </div>
   </div>
 </section>
