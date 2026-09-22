@@ -105,6 +105,14 @@ need no access to the Sheet.
 6. **Later phases** (AP, Combine, skill levels, report bands) widen the data displayed.
    Each phase updates the inventory above and is re-reviewed.
 
+## The GitHub Pages address
+
+`index.html` at the repo root is published on GitHub Pages as a short, memorable front
+door. It contains no data and no tracking: it forwards the browser to the Apps Script
+`/exec` URL and nothing else. That URL is therefore public, which is acceptable because
+access to the app is enforced by Google (FIS accounts only), not by keeping the address
+secret. The page and the profile app never exchange data.
+
 ## Repository hygiene
 
 - `.gitignore` excludes config, data, exports and screenshots. Only `data/dummy/` (synthetic)

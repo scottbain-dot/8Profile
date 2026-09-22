@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>My PE Profile · Grade 8</title>
+<!--
+  GitHub Pages front door for the G8 PE Profile. It only forwards to the
+  Apps Script web app, which runs inside the FIS Google Workspace and is
+  restricted to FIS accounts by Google. No data, no tracking, no cookies here.
+  Set APP_URL below to the deployment's /exec URL (Deploy → Manage deployments).
+-->
+<style>
+  :root{--maroon:#6f1d2c;--gold:#e7b64b}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 0%,#2a2024,#120d0e);color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-align:center;padding:24px}
+  .k{font-weight:700;letter-spacing:.22em;font-size:13px;color:var(--gold)}
+  h1{font-size:clamp(26px,5vw,40px);margin:8px 0 6px}
+  p{color:#c8bcbe;font-size:15px;max-width:38ch;margin:0 auto 18px;line-height:1.5}
+  a.btn{display:inline-block;background:linear-gradient(145deg,#f3d689,#c9982f);color:#3a1008;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:12px}
+  .spin{width:22px;height:22px;border:3px solid #3a2e31;border-top-color:var(--gold);border-radius:50%;animation:s .9s linear infinite;margin:0 auto 14px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .warn{background:#241d20;border:1px solid #3a2e31;border-radius:12px;padding:12px 16px;font-size:13px;color:#c8bcbe}
+</style>
+</head>
+<body>
+<main>
+  <div class="k">GRADE 8 PE · FIS</div>
+  <h1>My PE Profile</h1>
+  <div id="go">
+    <div class="spin"></div>
+    <p>Opening your profile with your FIS Google account…</p>
+    <a class="btn" id="link" href="#">Open my profile ↗</a>
+  </div>
+  <div id="none" class="warn" hidden>This link isn’t connected to the app yet. Ask your PE teacher.</div>
+</main>
+<script>
+  var APP_URL = '';
+  if (APP_URL) {
+    document.getElementById('link').href = APP_URL;
+    location.replace(APP_URL);
+  } else {
+    document.getElementById('go').hidden = true;
+    document.getElementById('none').hidden = false;
+  }
+</script>
+</body>
+</html>

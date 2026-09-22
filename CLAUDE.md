@@ -8,8 +8,10 @@ FIS-owned Sheet. Read `PRIVACY.md` and `PLAN.md` first.
 - **No real student data, ever, in this repo or in any prompt.** Names, emails, scores,
   photos, rosters, screenshots of real students: none. Test with `data/dummy/` and the
   preview's synthetic `example.edu` roster only.
-- **No Sheet IDs, script IDs, deployment URLs or tokens in the repo.** `config.json` is
-  git-ignored; `config.example.json` shows the shape with placeholders.
+- **No Sheet IDs, script IDs or tokens in the repo.** `config.json` is git-ignored;
+  `config.example.json` shows the shape with placeholders. The one exception is the
+  `/exec` URL in the root `index.html`, the GitHub Pages redirect (Google gates access,
+  not the URL's secrecy).
 - **Identity is read in one place**: `identity_()` in `src/Code.gs`, from
   `Session.getActiveUser()`. Never accept an email (or any identifier) from the client.
 - **Every read/write is for the caller's own row.** No server function may return the
@@ -24,6 +26,7 @@ FIS-owned Sheet. Read `PRIVACY.md` and `PLAN.md` first.
 
 - `src/Code.gs` server · `src/Index.html` shell · `src/Styles.html` CSS · `src/App.html` client · `src/appsscript.json` manifest
 - `dist/Code.gs` generated single file to paste into Apps Script (commit it after `npm run build`)
+- `index.html` GitHub Pages redirect to the live app: no data, no scripts beyond the forward
 - `dev/` fake runtime, preview, builders, tests · `design/` mockups · `docs/` rubric bank + brief
 
 ## Workflow

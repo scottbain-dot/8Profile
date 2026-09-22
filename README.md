@@ -120,5 +120,12 @@ Deploy → Manage deployments → edit → *New version*. The URL stays the same
 - **Changed the Sheet's Config and nothing happens.** Config is cached for two minutes; use
   PE Profile → Clear config cache.
 
-Keep the Sheet ID, script ID and `/exec` URL out of this repo (`config.example.json`
-shows the shape; `config.json` is git-ignored).
+### The GitHub address
+
+`https://scottbain-dot.github.io/8Profile/` is a redirect (root `index.html`) to the
+`/exec` URL, so students get a short link. Set it up once: Settings → Pages → Source
+"Deploy from a branch", branch `main`, folder `/ (root)`. Then put the `/exec` URL in
+the `APP_URL` line of `index.html`. The app itself still runs only inside Google.
+
+Keep the Sheet ID and script ID out of this repo (`config.example.json` shows the
+shape; `config.json` is git-ignored). The `/exec` URL appears only in `index.html`.
