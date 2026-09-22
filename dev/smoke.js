@@ -39,7 +39,7 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   await page.screenshot({ path: path.join(shots, 'profile.png'), fullPage: true });
 
   // Lesson 1 prediction, from the profile panel
-  check('profile shows the Lesson 1 call to action', (await page.textContent('.goals.l1')).includes('Predict my strengths'));
+  check('profile shows the Lesson 1 call to action', (await page.textContent('.goals.l1')).includes('Predict yourself'));
   await page.click('#topredict');
   await page.waitForSelector('.pitem');
   check('13 items to rate', (await page.$$('.pitem')).length === 13);

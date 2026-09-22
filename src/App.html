@@ -83,10 +83,10 @@ const D = {
 
 // ═══════════════ Combine Intro: strengths & challenges self-prediction ═══════════════
 const ITEMS = [
-  { k: 'cv',      g: 'fit',  e: '🫀', t: 'Cardiovascular endurance', s: 'keep going: the mile' },
-  { k: 'me',      g: 'fit',  e: '💪', t: 'Muscular endurance',       s: 'push-ups · sit-to-stand' },
-  { k: 'power',   g: 'fit',  e: '💥', t: 'Power',                    s: 'explode: broad jump' },
-  { k: 'speed',   g: 'fit',  e: '⚡', t: 'Speed',                    s: 'quick: 40 m sprint' },
+  { k: 'cv',      g: 'fit',  e: '🫀', t: 'Cardiovascular endurance', s: 'Your engine. Keeps you going when everyone else is gassed. · Mile run' },
+  { k: 'me',      g: 'fit',  e: '💪', t: 'Muscular endurance',       s: 'Muscles that don’t quit. The 20th rep as good as the 1st. · Push-ups · Sit-to-stand' },
+  { k: 'power',   g: 'fit',  e: '💥', t: 'Power',                    s: 'Explosive. Jump higher, launch off the line. · Broad jump' },
+  { k: 'speed',   g: 'fit',  e: '⚡', t: 'Speed',                    s: 'Pure quick. First to the ball. · 40m sprint' },
   { k: 'throw',   g: 'fund', e: '🎯', t: 'Throw',                    s: 'aim, distance, on the move' },
   { k: 'catch',   g: 'fund', e: '🧤', t: 'Catch',                    s: 'safe hands, under pressure' },
   { k: 'strike',  g: 'fund', e: '🏏', t: 'Strike',                   s: 'bat, racket, hand' },
@@ -97,8 +97,8 @@ const ITEMS = [
   { k: 'jump',    g: 'fund', e: '⬆️', t: 'Jump & land',              s: 'take off, land in control' },
   { k: 'core',    g: 'fund', e: '🧱', t: 'Core stability',           s: 'plank, hold your shape' }
 ];
-const RATING = { strength: { e: '🟢', t: 'Strength' }, neutral: { e: '🟡', t: 'Neutral' }, 'work-on': { e: '🔴', t: 'Challenge' } };
-const FREQ = { often: 'I do this often', sometimes: 'I do this sometimes', rarely: 'I do this rarely' };
+const RATING = { strength: { e: '🟢', t: 'Strength' }, neutral: { e: '🟡', t: 'Neutral' }, 'work-on': { e: '🔴', t: 'Work-on' } };
+const FREQ = { often: 'Often', sometimes: 'Sometimes', rarely: 'Rarely' };
 const CP = 'intro';
 let draft = {}; // { cv: { rating, freq }, ... } while rating
 function predictionSaved() { return (state.student.predictions || {})[CP] || null; }
@@ -160,8 +160,8 @@ function profileView(b) {
 function lesson1Panel() {
   const pred = predictionSaved();
   if (!pred) {
-    return '<div class="goals l1"><div class="hd">🔮 Lesson 1 · Strengths &amp; challenges</div><div class="empty">Before the Combine measures anything, predict where you’re strong and what you’ll work on. Two minutes, no wrong answers.</div>' +
-      '<button type="button" class="ct-btn pulse l1btn" id="topredict">Predict my strengths &amp; challenges ↗</button></div>';
+    return '<div class="goals l1"><div class="hd">🔮 Lesson 1 · Predict yourself</div><div class="empty">Before we test anything, what do YOU think? Predict your own strengths &amp; work-ons. We’ll check it against your real results later.</div>' +
+      '<button type="button" class="ct-btn pulse l1btn" id="topredict">Predict yourself ↗</button></div>';
   }
   const L = lists(pred);
   const chips = (arr, cls) => arr.length ? arr.map(i => '<span class="chip ' + cls + '">' + i.e + ' ' + esc(i.t) + '</span>').join('') : '<span class="chip none">none picked</span>';
@@ -183,10 +183,10 @@ function predictView(b) {
   const group = (g, em, title, lede) => '<h3 class="sec sec-' + g + '"><span class="em">' + em + '</span> ' + title + '</h3><p class="seclede">' + lede + '</p>' + ITEMS.filter(i => i.g === g).map(row).join('');
   return '<div class="wrap predict">' +
     '<button type="button" class="back light" id="toprofile">← Back to my profile</button>' +
-    '<div class="phero"><div class="k">LESSON 1 · COMBINE INTRO</div><h1>Strengths &amp; challenges</h1><p>Hi ' + esc(st.first) + '. This is your prediction. The Combine gives you the real data later, and we’ll see how well you knew yourself. It’s you vs. your past self, never a ranking.</p>' +
-    '<div class="legend"><span>🟢 Strength</span><span>🟡 Neutral</span><span>🔴 Challenge</span><span class="sep">·</span><span>then how often you do it</span></div></div>' +
-    group('fit', '🏃', 'Fitness', 'Four physical capacities the Combine measures.') +
-    group('fund', '🧩', 'Fundamental skills', 'Nine building blocks, each a ladder you climb this year.') +
+    '<div class="phero"><div class="k">LESSON 1 · YOUR TURN</div><h1>Predict yourself</h1><p>Before we test anything, what do YOU think, ' + esc(st.first) + '? We’ll check it against your real results later. It’s you vs. your past self, not a competition with anyone else.</p>' +
+    '<div class="legend"><span>1 · Is it a strength, neutral, or a work-on?</span><span class="sep">·</span><span>2 · How often do you do it?</span></div></div>' +
+    group('fit', '🏃', 'Part 1 · The parts of fitness', 'Your engine, your muscles, your explosiveness, your speed. Four parts the Combine measures.') +
+    group('fund', '🧩', 'Part 2 · 9 fundamental skills', 'The movement building blocks every sport is built on. You’ll level these up all year.') +
     '<div class="pbar"><div class="pcount"><b id="pdone">' + draftDone() + '</b> of ' + ITEMS.length + '<div class="ptrack"><i id="pfill" style="width:' + Math.round(100 * draftDone() / ITEMS.length) + '%"></i></div></div>' +
       '<button type="button" class="ct-btn" id="psave"' + (draftDone() === ITEMS.length ? '' : ' disabled') + '>' + (predictionSaved() ? 'Save changes' : 'Save my prediction') + '</button></div>' +
   '</div>';
@@ -194,12 +194,12 @@ function predictView(b) {
 
 function summaryView(b) {
   const pred = predictionSaved(), L = lists(pred);
-  const list = (arr, empty) => arr.length ? '<ul class="slist">' + arr.map(i => '<li><span class="em">' + i.e + '</span><b>' + esc(i.t) + '</b><span class="sf">' + esc(FREQ[pred.items[i.k].freq]) + '</span></li>').join('') + '</ul>' : '<p class="empty">' + empty + '</p>';
+  const list = (arr, empty) => arr.length ? '<ul class="slist">' + arr.map(i => '<li><span class="em">' + i.e + '</span><b>' + esc(i.t) + '</b><span class="sf">' + esc(FREQ[pred.items[i.k].freq]).toLowerCase() + '</span></li>').join('') + '</ul>' : '<p class="empty">' + empty + '</p>';
   return '<div class="wrap">' +
-    '<div class="sumhero"><div class="k">LESSON 1 · SAVED ✓</div><h1>Here’s your picture, ' + esc(b.student.first) + '</h1><p>' + L.strengths.length + ' strengths · ' + L.neutral.length + ' neutral · ' + L.workons.length + ' to work on. Nobody else sees this. We’ll compare it to your real Combine results, and the interesting part is where you surprise yourself.</p></div>' +
+    '<div class="sumhero"><div class="k">LESSON 1 · SAVED ✓</div><h1>Here’s your shape, ' + esc(b.student.first) + '</h1><p>' + L.strengths.length + ' strengths · ' + L.neutral.length + ' neutral · ' + L.workons.length + ' work-ons. Everyone’s shape is different: strong in some parts, growing in others. That’s normal. We’ll check this against your real Combine results, and the interesting part is where you surprise yourself.</p></div>' +
     '<div class="sumgrid"><div class="sumcard g"><h3>🟢 My predicted strengths</h3>' + list(L.strengths, 'You didn’t pick any strengths yet. The Combine might find some for you.') + '</div>' +
     '<div class="sumcard r"><h3>🔴 My work-ons</h3>' + list(L.workons, 'No challenges picked. Bold. The Combine will have a say.') + '</div></div>' +
-    '<div class="sumnote">↻ <b>What happens next:</b> at the September Combine you measure all thirteen for real. Then your profile lines your prediction up against your numbers.</div>' +
+    '<div class="sumnote">↻ <b>What happens next:</b> the Combine. Same checks in September, January and May, so you can watch yourself get better. Your profile lines this prediction up against your numbers.</div>' +
     '<div class="sumacts"><button type="button" class="ct-btn" id="toprofile">Back to my profile ↗</button><button type="button" class="lnk" id="topredict">Edit my prediction</button></div>' +
   '</div>';
 }
@@ -210,7 +210,7 @@ function compareView(b) {
   const pred = predictionSaved(), combine = b.student.combine || {};
   const rows = ITEMS.map(i => {
     const p = pred && pred.items[i.k], c = combine[i.k];
-    return '<div class="crowi a-' + i.g + '"><span class="em">' + i.e + '</span><div class="ct"><b>' + esc(i.t) + '</b><span>' + (p ? RATING[p.rating].e + ' ' + RATING[p.rating].t + ' · ' + esc(FREQ[p.freq]) : 'no prediction') + '</span></div>' +
+    return '<div class="crowi a-' + i.g + '"><span class="em">' + i.e + '</span><div class="ct"><b>' + esc(i.t) + '</b><span>' + (p ? RATING[p.rating].e + ' ' + RATING[p.rating].t + ' · ' + esc(FREQ[p.freq]).toLowerCase() : 'no prediction') + '</span></div>' +
       '<div class="cv">' + (c ? esc(String(c)) : '<span class="pending">not yet measured</span>') + '</div></div>';
   }).join('');
   return '<div class="wrap">' +

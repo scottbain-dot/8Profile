@@ -47,7 +47,7 @@ Status: **v1 deployed to the FIS Sheet and working for the owner account; profil
 - [x] `Predictions` tab (Email · Checkpoint · Timestamp · 13 × rating/freq), `savePrediction()` validates all 13 and upserts by verified email + checkpoint
 - [x] Predict view (traffic light + frequency per item, progress bar, save only when complete), summary view (strengths / work-ons), profile panel with chips + Edit, compare view stub reading prediction next to `combine` (null until v3)
 - [x] Re-opening is editable; saving again overwrites the intro row with a new timestamp
-- [ ] Align wording with `G8_Fitness_Lesson1_Deck.html` once it is shared
+- [x] Wording aligned with the Lesson 1 deck (`lesson1/index.html`, hosted on Pages)
 
 ### v1.1 — polish once real students have used it
 - Vendor `html2canvas` → "Save my card" PNG (runs inside the school login; the file is the student's own)

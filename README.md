@@ -132,5 +132,10 @@ running **PE Profile → 1. Set up tabs** again creates it up front.
 "Deploy from a branch", branch `main`, folder `/ (root)`. Then put the `/exec` URL in
 the `APP_URL` line of `index.html`. The app itself still runs only inside Google.
 
+`lesson1/` holds the Lesson 1 teaching deck (arrow keys or click to move, `f` for full
+screen), served at `https://scottbain-dot.github.io/8Profile/lesson1/`. Its last slide
+links to the profile. It is a teacher-facing slide deck with no student data; it loads
+Archivo/Inter from Google Fonts for the projector.
+
 Keep the Sheet ID and script ID out of this repo (`config.example.json` shows the
 shape; `config.json` is git-ignored). The `/exec` URL appears only in `index.html`.
