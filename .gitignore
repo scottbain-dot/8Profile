@@ -28,3 +28,6 @@ dev/preview.html
 node_modules/
 .DS_Store
 Thumbs.db
+
+# generated stopgap site copy
+dist/site/
