@@ -15,6 +15,8 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
+  // The fake sign-in token carries a photo URL on Google's image host; serve a tiny SVG for it offline.
+  await page.route('https://lh3.googleusercontent.com/**', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#cfe4f2"/></svg>' }));
 
   // Signed out → sign-in screen; the (fake) Google button signs in
   await page.goto(url('role=anon'));
