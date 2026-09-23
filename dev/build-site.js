@@ -16,4 +16,8 @@ const html = read('src/Index.html')
   .replace('<!--RUBRICS-->', read('src/Rubrics.html'))
   .replace('<!--APP-->', read('src/App.html'));
 fs.writeFileSync(path.join(root, 'index.html'), html);
-console.log('Wrote index.html', `(${(html.length / 1024).toFixed(0)} KB)`);
+// Same page at a second path: the root URL was mis-classified by the school web
+// filter while it was a redirect page, and the tag stuck to that URL.
+fs.mkdirSync(path.join(root, 'pe'), { recursive: true });
+fs.writeFileSync(path.join(root, 'pe/index.html'), html);
+console.log('Wrote index.html and pe/index.html', `(${(html.length / 1024).toFixed(0)} KB)`);

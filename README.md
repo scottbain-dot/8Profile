@@ -125,8 +125,10 @@ would change it, and then `site.config.json` must be updated and the page rebuil
 
 ### The GitHub address
 
-`https://scottbain-dot.github.io/8Profile/` is the app. `index.html` at the repo root is the
-built page; `lesson1/` holds the Lesson 1 teaching deck (arrow keys or click to move, `f`
+`https://scottbain-dot.github.io/8Profile/` is the app, and `https://scottbain-dot.github.io/8Profile/pe/`
+is the same page at a second path (the root URL was mis-classified by the student web
+filter while it was a redirect page; use whichever the filter allows and ask IT to clear
+the root). `index.html` at the repo root is the built page, `pe/index.html` its copy; `lesson1/` holds the Lesson 1 teaching deck (arrow keys or click to move, `f`
 for full screen), served at `/8Profile/lesson1/`, whose last slide links to the app.
 
 Keep the Sheet ID and script ID out of this repo (`config.example.json` shows the shape;
