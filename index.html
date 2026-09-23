@@ -388,10 +388,11 @@ function showSignin(msg) {
   document.body.classList.remove('dark');
   $('#app').innerHTML = signinView(msg);
   gisReady(() => {
-    if (!gisInit) { google.accounts.id.initialize({ client_id: CFG.clientId, callback: onCredential, hd: CFG.domain, auto_select: true, itp_support: true, use_fedcm_for_prompt: true }); gisInit = true; }
+    // Same shape as the other FIS portals: the rendered button in popup mode, no One Tap.
+    // One Tap / FedCM misbehaves behind some managed-device filters.
+    if (!gisInit) { google.accounts.id.initialize({ client_id: CFG.clientId, callback: onCredential, hd: CFG.domain, ux_mode: 'popup', auto_select: false, cancel_on_tap_outside: true, itp_support: true }); gisInit = true; }
     const el = $('#gbtn'); if (!el) return; el.innerHTML = '';
     google.accounts.id.renderButton(el, { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', width: 280 });
-    try { google.accounts.id.prompt(); } catch (e) { /* One Tap is optional */ }
   });
 }
 function onCredential(resp) { if (resp && resp.credential) { keepToken(resp.credential); boot(); } }
