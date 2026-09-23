@@ -68,7 +68,33 @@
   };
   g.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
   g.CacheService = { getScriptCache: () => ({ get: k => (k in FakeSheets.cache ? FakeSheets.cache[k] : null), put: (k, v) => { FakeSheets.cache[k] = v; }, remove: k => { delete FakeSheets.cache[k]; } }) };
-  g.Utilities = { formatDate: d => new Date(d).toISOString().slice(0, 10) };
+  const b64url = str => (typeof btoa === 'function' ? btoa(str) : Buffer.from(str).toString('base64')).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const b64urlDecode = str => { const b = str.replace(/-/g, '+').replace(/_/g, '/'); return typeof atob === 'function' ? atob(b) : Buffer.from(b, 'base64').toString('utf8'); };
+  g.Utilities = {
+    formatDate: d => new Date(d).toISOString().slice(0, 10),
+    DigestAlgorithm: { SHA_256: 'SHA_256' },
+    // not a real hash; stable and distinct per input is all the cache key needs
+    computeDigest: (alg, str) => { let h1 = 0x811c9dc5, h2 = 0x1000193; for (const ch of String(str)) { h1 = ((h1 ^ ch.charCodeAt(0)) * 16777619) >>> 0; h2 = ((h2 + ch.charCodeAt(0)) * 31) >>> 0; } return [h1, h2, String(str).length]; },
+    base64EncodeWebSafe: bytes => b64url(JSON.stringify(bytes))
+  };
+  // A fake Google ID token: "fake.<base64url claims>.sig". FakeSheets.token(claims) makes one;
+  // the fake tokeninfo endpoint decodes it. Real tokens never touch the fake runtime.
+  FakeSheets.token = claims => 'fake.' + b64url(JSON.stringify(claims)) + '.sig';
+  FakeSheets.fetchCount = 0;
+  FakeSheets.fetch = (url, opts) => {
+    FakeSheets.fetchCount++;
+    const m = /tokeninfo\?id_token=(.+)$/.exec(url);
+    const reply = (code, obj) => ({ getResponseCode: () => code, getContentText: () => JSON.stringify(obj) });
+    if (!m) return reply(404, { error: 'unknown url' });
+    const t = decodeURIComponent(m[1]);
+    if (!t.startsWith('fake.')) return reply(400, { error: 'invalid_token' });
+    try { return reply(200, JSON.parse(b64urlDecode(t.split('.')[1]))); } catch (e) { return reply(400, { error: 'invalid_token' }); }
+  };
+  g.UrlFetchApp = { fetch: (url, opts) => FakeSheets.fetch(url, opts) };
+  g.ContentService = {
+    MimeType: { JSON: 'application/json' },
+    createTextOutput: text => { const o = { _text: text, setMimeType() { return o; }, getContent: () => text }; return o; }
+  };
   g.HtmlService = {
     XFrameOptionsMode: { DEFAULT: 'DEFAULT', ALLOWALL: 'ALLOWALL' },
     createTemplate: src => {

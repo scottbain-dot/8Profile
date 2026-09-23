@@ -1,6 +1,6 @@
 {
   "_comment": "Copy to config.json (git-ignored) if you use clasp or scripts that need these. v1 needs none of it: the script is container-bound to the FIS Sheet and reads its own Sheet, so no ID lives anywhere but Google.",
   "scriptId": "<Apps Script project ID from Project Settings — for .clasp.json, never commit>",
-  "webAppUrl": "<the /exec URL from Deploy → Manage deployments — share with students, never commit>",
+  "webAppUrl": "<the /exec URL from Deploy → Manage deployments — also the apiUrl in site.config.json>",
   "domain": "fis.edu"
 }

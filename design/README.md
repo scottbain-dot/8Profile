@@ -15,5 +15,5 @@ app uses Archivo with a system fallback), body font Inter, the six PE-Style colo
 skins, the hexagon radar, the 4-segment level bars.
 
 Note the mockups load Google Fonts and `html2canvas` from CDNs. The app does not do
-either by default: fonts are behind the Config flag `web_fonts` (off), and download will
+either: the app uses system fonts, and download will
 be added only with the library vendored into the repo.

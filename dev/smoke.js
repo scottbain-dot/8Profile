@@ -16,6 +16,19 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   const page = await browser.newPage({ viewport: { width: 1100, height: 900 } });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
 
+  // Signed out → sign-in screen; the (fake) Google button signs in
+  await page.goto(url('role=anon'));
+  await page.waitForSelector('.signin');
+  check('signed out shows the sign-in screen', (await page.textContent('.signin')).includes('Sign in with your'));
+  await page.click('#fakegsi');
+  await page.waitForSelector('.sbtn');
+  check('sign-in leads to the profile (first visit → card builder)', await page.evaluate(() => document.body.classList.contains('dark')));
+
+  // A token the server rejects → back to sign-in with a message
+  await page.goto(url('role=expired').replace('reset=1&', ''));
+  await page.waitForSelector('.signin');
+  check('rejected token → sign-in screen with a message', (await page.textContent('.signin')).includes('sign-in expired'));
+
   // First visit, no style yet → lands on the dark "build your card" screen
   await page.goto(url('role=student'));
   await page.waitForSelector('.sbtn');
@@ -89,9 +102,9 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   check('another student has their own choice', (await page.textContent('.ct-arch')).includes('THE IMPROVER'));
   check('another student sees their own seeded prediction', (await page.$$('.goals.l1 .chip')).length >= 8);
 
-  await page.goto(url('role=student&photo=1').replace('reset=1&', ''));
+  await page.goto(url('role=student').replace('reset=1&', ''));
   await page.waitForSelector('.ct-av img');
-  check('photo shown when the directory returns one', (await page.$$('.ct-av img')).length === 1);
+  check('photo from the sign-in token is shown', (await page.$$('.ct-av img')).length === 1);
 
   await page.goto(url('role=student&fail=1').replace('reset=1&', ''));
   await page.waitForSelector('.cardteaser');
@@ -101,12 +114,16 @@ const shots = path.join(root, 'dev/shots'); fs.mkdirSync(shots, { recursive: tru
   await page.waitForSelector('.toast.err.show');
   check('failed save reverts to previous style', (await page.textContent('#archt')) === 'THE EXPLORER');
 
-  for (const [role, needle] of [['teacher', 'Teacher view'], ['unknown', 'Not on the Grade 8 list'], ['wrong', 'Use your FIS account'], ['anon', 'confirm who you are']]) {
+  for (const [role, needle] of [['teacher', 'Teacher view'], ['unknown', 'Not on the Grade 8 list'], ['wrong', 'Use your FIS account']]) {
     await page.goto(url('role=' + role).replace('reset=1&', ''));
     await page.waitForSelector('.msg');
     check(role + ' screen', (await page.textContent('.msg')).includes(needle));
     await page.screenshot({ path: path.join(shots, role + '.png') });
   }
+  await page.click('#signout');
+  await page.waitForSelector('.signin');
+  check('sign out returns to the sign-in screen', true);
+  await page.screenshot({ path: path.join(shots, 'signin.png') });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(url('role=student').replace('reset=1&', ''));
   await page.waitForSelector('.cardteaser');

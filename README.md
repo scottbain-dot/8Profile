@@ -1,66 +1,72 @@
 # G8 PE Profile — FIS Grade 8
 
 A student-facing PE profile for Grade 8 at Frankfurt International School. A student
-opens one link, is signed in with their FIS Google account, is greeted by name, picks
-their **PE Style** (their athlete-card identity, saved), and sees what the year holds.
-Later phases fill the profile and card with their real Active Participation,
-Combine and fundamental-skill data (see `PLAN.md`).
+opens one link, signs in with their FIS Google account, is greeted by name, picks their
+**PE Style** (their athlete-card identity, saved), makes their Lesson 1 **strengths &
+challenges** prediction, and sees what the year holds. Later phases fill the profile and
+card with their real Active Participation, Combine and fundamental-skill data (see `PLAN.md`).
 
 **This repo is code only.** No rosters, no names, no scores, no photos, no Sheet IDs.
-Real data lives only in an FIS-owned Google Sheet and is read at runtime by the
-signed-in student's own Google session. Read `PRIVACY.md` before changing anything
-that touches identity or data.
+Real data lives only in an FIS-owned Google Sheet and is read at runtime for the
+signed-in student alone. Read `PRIVACY.md` before changing anything that touches
+identity or data.
 
 ## How it works
 
 ```
-student's browser ──(FIS Google sign-in, by Google)──▶ Apps Script web app (inside the FIS Sheet)
-                                                        │  Session.getActiveUser() = verified fis.edu email
-                                                        │  identity_()  → the caller's own Students row
-                                                        │  bootstrap()  → name, class, style (own row only)
-                                                        │  saveStyle()  → Profile row keyed by that email
-                                                        ▼
-                                              FIS-owned Google Sheet
-                                              Config · Students · Teachers · Profile
+student's browser on GitHub Pages ── Sign in with Google (accounts.google.com) ──▶ Google ID token
+        │
+        │  POST { action, token } as JSON
+        ▼
+Apps Script API (inside the FIS Sheet, executes as the owner, access "Anyone")
+        │  verifyToken_(): asks Google (tokeninfo) that the token is genuine,
+        │  issued to our sign-in client, for a verified @fis.edu account, not expired
+        │  identity_() → the caller's own Students row
+        │  bootstrap / saveStyle / saveGoal / savePrediction → that student's rows only
+        ▼
+FIS-owned Google Sheet: Config · Students · Teachers · Profile · Predictions
 ```
 
-- **Google Apps Script web app, container-bound** to the Sheet. Deployed *Execute as Me*
-  (the Sheet owner) with access *Anyone within fis.edu*. Google does the sign-in; the
-  script asks Google who the caller is. The browser never sends an email and never
-  receives anyone else's row. Students need no access to the Sheet itself.
+- **The page** (`index.html`, built from `src/`) is served by GitHub Pages like the other
+  FIS PE apps, so the school filter treats it the same way. It holds no data.
+- **Sign-in** is Google Identity Services with the FIS sign-in client. The page keeps the
+  token for the tab session only and sends it with every request.
+- **The API** is a container-bound Apps Script web app deployed *Execute as Me*, *Anyone*.
+  "Anyone" is what lets a page on another origin call it; access is enforced by the token
+  check, not by the deployment setting. The browser never sends an email or an ID as
+  identity, and the server never trusts one.
+- **Photo**: the picture claim of the student's own token, shown while signed in. Never
+  copied or stored.
 - **Lesson 1 activity**: "Strengths & challenges" self-prediction (13 items × traffic light
   + frequency) saved to a `Predictions` tab, one row per student per checkpoint, shown
   back as a summary and later compared with Combine data (compare view is a stub).
-- **Frontend** served by `HtmlService` from the same script: `src/Index.html` (shell),
-  `src/Styles.html` (CSS, the mockups' visual system), `src/App.html` (client JS).
-- **No third-party requests** by default: no CDN scripts, no analytics, no cookies beyond
-  Google's own session. Web fonts are off unless the Config flag `web_fonts` is TRUE.
-- **Photo**: the student's Google directory photo, looked up at runtime only when Config
-  `photo_lookup` is TRUE and the People API advanced service is enabled. Never copied or
-  stored. Initials otherwise.
+- No CDN scripts beyond Google's sign-in library, no analytics, no fonts from third parties.
 
-This is the same pattern as the `net-games` PE tracker, which FIS students already use.
+The earlier design served the page from Apps Script itself (`HtmlService`). It worked for
+staff but the student web filter blocks Google-hosted script pages, which is why the app
+now follows the same GitHub Pages + API shape as the other FIS PE projects.
 
 ## Layout
 
 ```
+index.html         GENERATED student page (GitHub Pages) — node dev/build-site.js. Commit it.
+site.config.json   public values baked into the page: API URL, sign-in client ID, domain
 src/
-  Code.gs          server: tabs, config, identity, bootstrap, saveStyle/saveGoal, Sheet menu
-  Index.html       page shell (Apps Script template)
-  Styles.html      CSS (profile = light mockup, card builder = dark mockup)
+  Code.gs          server: token verification, identity, bootstrap, saveStyle/saveGoal/savePrediction, Sheet menu
+  Index.html       page shell (placeholders filled by the builders)
+  Styles.html      CSS (profile = light mockup, card builder = dark mockup, sign-in, Lesson 1)
   Rubrics.html     GENERATED from docs/G8_PE_Rubric_Bank.md by dev/build-rubrics.js (skill ladders)
-  App.html         client: profile page (teaser card, at-a-glance, fitness, skills, participation, report) + card builder
-  appsscript.json  manifest: least-privilege scopes, web app = DOMAIN access, executes as deployer
-  appsscript.photo.json  same, plus the directory services + scopes for the Google photo
+  App.html         client: sign-in + API bridge, profile, card builder, predict / summary / compare views
+  appsscript.json  manifest: scopes (this Sheet, external request for tokeninfo), web app = ANYONE, executes as deployer
 dist/
-  Code.gs          GENERATED single file (server + embedded HTML) — what gets pasted. node dev/build-single.js
+  Code.gs          copy of src/Code.gs — what gets pasted into the Sheet's script. node dev/build-single.js
+lesson1/           the Lesson 1 teaching deck, served at /lesson1/
 dev/
-  fake-sheets.js   in-memory stand-in for SpreadsheetApp & co, so Code.gs runs in Node / a browser
-  mock-runtime.js  fake google.script.run + synthetic roster seed (browser preview)
-  build-preview.js builds dev/preview.html from the real app files
-  build-single.js  builds dist/Code.gs
+  fake-sheets.js   in-memory stand-in for SpreadsheetApp, UrlFetchApp (tokeninfo), ContentService & co
+  mock-runtime.js  fake Sign in with Google + fake API (window.fetch → doPost) + synthetic roster (browser preview)
+  build-site.js    builds index.html · build-preview.js builds dev/preview.html · build-single.js builds dist/Code.gs
   build-rubrics.js builds src/Rubrics.html from the Rubric Bank
-  test-server.js   Node checks of the privacy guarantees (own row only, domain refused, writes validated)
+  test-server.js   Node checks: token verification, own-row-only reads, refusals, validated writes
   smoke.js         headless Chromium run of the preview (Playwright); screenshots in dev/shots/ (ignored)
 data/dummy/        synthetic test data only
 design/            the mockups the app is built from (fictional sample data)
@@ -73,69 +79,72 @@ PLAN.md            architecture decisions, milestones v1–v4, open questions
 
 ```
 npm test                                      # node dev/test-server.js — server checks against the fake Sheet
-npm run preview                               # dev/preview.html — open ?role=student | student2 | teacher | unknown | wrong | anon
-                                              #   &photo=1  &fail=1  &latency=800  &reset=1  &as=someone@example.edu
+npm run preview                               # dev/preview.html — open ?role=student | student2 | teacher | unknown | wrong | anon | expired
+                                              #   &fail=1  &latency=800  &reset=1  &nophoto=1  &as=someone@example.edu
 NODE_PATH=$(npm root -g) npm run smoke        # needs playwright + Chromium
-npm run build                                 # regenerate dist/Code.gs — commit it
+npm run build                                 # regenerate index.html and dist/Code.gs — commit both
 ```
 
 The preview runs the real `Code.gs` in the browser against a fake spreadsheet kept in
-`localStorage`, so identity and write logic are exercised too. All preview data is
-synthetic (`example.edu`).
+`localStorage`, with a fake Google sign-in and a fake API, so token checks, identity and
+write logic are exercised too. All preview data is synthetic (`example.edu`).
 
-## Deploying (teacher, once)
+## Deploying (teacher)
+
+**The Sheet + API, once**
 
 1. Create a Google Sheet **in the FIS Workspace**, owned by the PE teacher account.
 2. Extensions → Apps Script. Replace the contents of `Code.gs` with `dist/Code.gs`.
    Project Settings → tick *Show "appsscript.json"* and replace it with `src/appsscript.json`.
 3. Save. In the editor's function dropdown pick **`setupTabs`** and click **Run**. Authorise
    with your FIS account when Google asks (Advanced → Go to project if it warns the app is
-   unverified). This creates the four tabs. Then **reload the Sheet**: the **PE Profile**
-   menu appears. (The menu is built on open and cannot ask for authorisation itself, so it
-   stays hidden until this one manual run.)
+   unverified). This creates the tabs. Then **reload the Sheet**: the **PE Profile** menu
+   appears. (The menu is built on open and cannot ask for authorisation itself.)
 4. Fill **Students** (Email · Name · Class) with the Grade 8 roster. Add colleagues to
-   **Teachers**. Check **Config** (`domain` = `fis.edu`, `year_label`).
-5. Deploy → New deployment → Web app: *Execute as* **Me**, *Who has access* **Anyone within
-   Frankfurt International School**. Copy the `/exec` URL. That is the link students open.
-6. Test with a **dummy student account** in the FIS domain (on the roster), a domain
-   account not on the roster, and a non-FIS account. Expected: own profile / "not on the
-   list" / "use your FIS account". Only then share the link.
-7. **Google profile photo** (optional, off by default): replace `appsscript.json` with
-   `src/appsscript.photo.json` (it enables the People API and Admin SDK services and adds
-   the two directory-read scopes), save, run `setupTabs` from the editor once more to
-   re-authorise, set Config `photo_lookup` to TRUE, then Manage deployments → New version.
-   The script looks up each student's own directory photo at runtime, People API first,
-   Admin Directory (domain_public view) second. If FIS directory sharing is off, students
-   simply see initials and nothing breaks.
+   **Teachers**. Check **Config**: `domain` = `fis.edu`, `oauth_client_id` = the sign-in
+   client the page uses (same value as `site.config.json`), `year_label`.
+5. Deploy → New deployment → Web app: *Execute as* **Me**, *Who has access* **Anyone**.
+   Copy the `/exec` URL into `site.config.json` → `apiUrl`, run `npm run build`, commit.
+   (Opening that URL in a browser only shows a "this is the data service" note.)
 
-After code changes: `npm run check`, commit, paste the new `dist/Code.gs`, then
-Deploy → Manage deployments → edit → *New version*. The URL stays the same. If the
-update adds a tab (e.g. `Predictions`), it is created automatically on first save;
-running **PE Profile → 1. Set up tabs** again creates it up front.
+**The page**
+
+6. GitHub → Settings → Pages → Deploy from branch `main`, folder `/ (root)`. The student
+   link is `https://scottbain-dot.github.io/8Profile/`.
+7. The Google sign-in client must list `https://scottbain-dot.github.io` under *Authorised
+   JavaScript origins* (Google Cloud console → APIs & Services → Credentials). The FIS PE
+   client already does, because the other portals run from the same origin.
+8. Test with a **dummy student account** on the roster, a domain account not on the
+   roster, and a personal Gmail. Expected: own profile / "not on the list" / "use your FIS
+   account". Only then share the link.
+
+**After code changes**: `npm run check`, commit (this rebuilds `index.html` and
+`dist/Code.gs`). For server changes also paste the new `dist/Code.gs` and Deploy → Manage
+deployments → edit → *New version*. The `/exec` URL stays the same. A *new deployment*
+would change it, and then `site.config.json` must be updated and the page rebuilt.
+
+### The GitHub address
+
+`https://scottbain-dot.github.io/8Profile/` is the app. `index.html` at the repo root is the
+built page; `lesson1/` holds the Lesson 1 teaching deck (arrow keys or click to move, `f`
+for full screen), served at `/8Profile/lesson1/`, whose last slide links to the app.
+
+Keep the Sheet ID and script ID out of this repo (`config.example.json` shows the shape;
+`config.json` is git-ignored). The `/exec` URL and the sign-in client ID are public values
+and live in `site.config.json`.
 
 ### Troubleshooting
 
 - **No "PE Profile" menu.** Run `setupTabs` once from the editor (step 3) and reload the Sheet.
 - **"Cannot call SpreadsheetApp.getActiveSpreadsheet"** or tabs appear nowhere: the script is
   not bound to the Sheet. Open the editor from the Sheet via Extensions → Apps Script and paste there.
-- **Student sees "Couldn't confirm who you are".** The deployment is not "Anyone within FIS",
-  or the student is signed into a personal Google account in that browser profile.
+- **Sign-in button never appears.** The page could not load Google's sign-in library
+  (`accounts.google.com`); check the network / filter.
+- **"Your sign-in expired" straight after signing in.** The token was refused by the server:
+  Config `oauth_client_id` does not match the client in `site.config.json`, or the deployment
+  is not the one in `apiUrl`. Fix the value, PE Profile → Clear config cache.
+- **Student sees "Use your FIS account".** They signed in with a personal Google account.
 - **Name shows the wrong way round.** Names in the Students tab may be "Last, First" or
   "First Last"; the app greets by first name either way and ignores anything before a comma.
 - **Changed the Sheet's Config and nothing happens.** Config is cached for two minutes; use
   PE Profile → Clear config cache.
-
-### The GitHub address
-
-`https://scottbain-dot.github.io/8Profile/` is a redirect (root `index.html`) to the
-`/exec` URL, so students get a short link. Set it up once: Settings → Pages → Source
-"Deploy from a branch", branch `main`, folder `/ (root)`. Then put the `/exec` URL in
-the `APP_URL` line of `index.html`. The app itself still runs only inside Google.
-
-`lesson1/` holds the Lesson 1 teaching deck (arrow keys or click to move, `f` for full
-screen), served at `https://scottbain-dot.github.io/8Profile/lesson1/`. Its last slide
-links to the profile. It is a teacher-facing slide deck with no student data; it loads
-Archivo/Inter from Google Fonts for the projector.
-
-Keep the Sheet ID and script ID out of this repo (`config.example.json` shows the
-shape; `config.json` is git-ignored). The `/exec` URL appears only in `index.html`.

@@ -1,7 +1,8 @@
 # CLAUDE.md — G8 PE Profile
 
-Student-facing PE profile for Grade 8 at FIS. Google Apps Script web app bound to an
-FIS-owned Sheet. Read `PRIVACY.md` and `PLAN.md` first.
+Student-facing PE profile for Grade 8 at FIS. A static page on GitHub Pages (built to
+`index.html`) that signs the student in with Google and calls a Google Apps Script JSON API
+bound to an FIS-owned Sheet. Read `PRIVACY.md` and `PLAN.md` first.
 
 ## Privacy rules (non-negotiable)
 
@@ -9,37 +10,38 @@ FIS-owned Sheet. Read `PRIVACY.md` and `PLAN.md` first.
   photos, rosters, screenshots of real students: none. Test with `data/dummy/` and the
   preview's synthetic `example.edu` roster only.
 - **No Sheet IDs, script IDs or tokens in the repo.** `config.json` is git-ignored;
-  `config.example.json` shows the shape with placeholders. The one exception is the
-  `/exec` URL in the root `index.html`, the GitHub Pages redirect (Google gates access,
-  not the URL's secrecy).
-- **Identity is read in one place**: `identity_()` in `src/Code.gs`, from
-  `Session.getActiveUser()`. Never accept an email (or any identifier) from the client.
+  `config.example.json` shows the shape with placeholders. Public values only live in
+  `site.config.json` (the API `/exec` URL and the Google sign-in client ID): access is
+  enforced by the token check, not by their secrecy.
+- **Identity is established in one place**: `verifyToken_()` / `identity_()` in
+  `src/Code.gs`, from the Google ID token verified with Google (aud, email_verified, hd,
+  exp). Never accept an email (or any identifier) from the request body as identity.
 - **Every read/write is for the caller's own row.** No server function may return the
   roster or another student's data. Keep `dev/test-server.js` green; add a check when you
   add a function.
-- **No third-party requests by default.** No CDN scripts, analytics, or fonts unless
-  behind a Config flag that defaults off. Vendor libraries into the repo instead.
-- **No emails in thrown errors or logs** (they reach Stackdriver).
-- Photos: Google account photo at runtime only. Never download, copy or store an image.
+- **No third-party requests** beyond GitHub serving the page and Google (sign-in library,
+  sign-in, API). No CDN scripts, analytics, or fonts. Vendor libraries into the repo instead.
+- **No emails or tokens in thrown errors or logs** (they reach Stackdriver).
+- Photos: the token's picture claim at runtime only. Never download, copy or store an image.
 
 ## Layout
 
-- `src/Code.gs` server · `src/Index.html` shell · `src/Styles.html` CSS · `src/App.html` client · `src/appsscript.json` manifest
-- `dist/Code.gs` generated single file to paste into Apps Script (commit it after `npm run build`)
-- `index.html` GitHub Pages redirect to the live app: no data, no scripts beyond the forward
-- `dev/` fake runtime, preview, builders, tests · `design/` mockups · `docs/` rubric bank + brief
+- `src/Code.gs` server (API) · `src/Index.html` shell · `src/Styles.html` CSS · `src/App.html` client · `src/appsscript.json` manifest
+- `index.html` GENERATED student page for GitHub Pages (`dev/build-site.js`); `site.config.json` feeds it
+- `dist/Code.gs` copy of the server to paste into Apps Script (`dev/build-single.js`). Commit both after `npm run build`
+- `lesson1/` teaching deck · `dev/` fake runtime, preview, builders, tests · `design/` mockups · `docs/` rubric bank + brief
 
 ## Workflow
 
 ```
 npm test                                  # server checks (must pass)
-npm run preview                           # dev/preview.html?role=student|student2|teacher|unknown|wrong|anon &photo=1 &fail=1
+npm run preview                           # dev/preview.html?role=student|student2|teacher|unknown|wrong|anon|expired &fail=1 &nophoto=1
 NODE_PATH=$(npm root -g) npm run smoke    # Playwright smoke + screenshots (dev/shots/, ignored)
-npm run build                             # regenerate dist/Code.gs before committing
+npm run build                             # regenerate index.html and dist/Code.gs before committing
 ```
 
-Before committing: `npm run check` (tests + build). Commit `dist/Code.gs` with the source
-change. No dependencies to install; Node 18+ and, for smoke, a global Playwright.
+Before committing: `npm run check` (tests + builds). Commit `index.html` and `dist/Code.gs`
+with the source change. No dependencies to install; Node 18+ and, for smoke, a global Playwright.
 
 ## Conventions
 
@@ -51,5 +53,5 @@ change. No dependencies to install; Node 18+ and, for smoke, a global Playwright
   the six PE-Style skins in `SKINS`. Reuse the mockups in `design/`; do not redesign.
 - Rubric wording comes from `docs/G8_PE_Rubric_Bank.md` (single source). Generate, do not
   hand-copy, when v2 needs it.
-- Same auth pattern as the `net-games` repo; `aa-dash`'s client-supplied-email pattern is
-  **not** to be reused here.
+- Same hosting shape as `aa-dash` (GitHub Pages + Apps Script API), but never its
+  client-supplied-email identity: every request is identified by a server-verified token.

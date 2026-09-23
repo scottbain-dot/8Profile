@@ -1,25 +1,28 @@
 // =============================================================
-// G8 PE Profile — Apps Script server (FIS, Grade 8 PE)
+// G8 PE Profile — Apps Script API (FIS, Grade 8 PE)
 // =============================================================
 // Lives INSIDE the FIS-owned Google Sheet that holds the roster and the
-// profile data. Deployed as a web app: Execute as Me (the Sheet owner),
-// access "Anyone within fis.edu". The student's identity comes from
-// Session.getActiveUser() on the server. The browser never sends an email
-// and never receives anyone else's row.
+// profile data. Deployed as a web app (Execute as Me, access "Anyone") that
+// answers JSON to the student-facing page on GitHub Pages, the same shape as
+// the other FIS PE apps. Every request carries the student's Google sign-in
+// token; the server verifies it with Google before answering, and then
+// only ever reads or writes that student's own rows.
 //
 // Tabs (menu "PE Profile → Set up tabs" creates them):
-//   Config    Key · Value · What it does
-//   Students  Email · Name · Class             the roster, teacher-maintained
-//   Teachers  Email · Name                     who gets the teacher view
+//   Config       Key · Value · What it does
+//   Students     Email · Name · Class             the roster, teacher-maintained
+//   Teachers     Email · Name                     who gets the teacher view
 //   Profile      Email · Style · Goal · Updated   written by the app, one row per student
 //   Predictions  Email · Checkpoint · Timestamp · 13 × (rating, freq)   one row per student per checkpoint
 //
 // Privacy rules baked in (PRIVACY.md is the reviewable version):
-//   • identity_() is the only place an email is read. It comes from Google, never the client.
-//   • bootstrap() returns the caller's own row only. Nothing returns the roster.
-//   • Errors thrown to the client never contain an email (they reach Stackdriver logs).
-//   • The photo is a URL to the student's own Google directory photo, fetched at
-//     runtime only when photo_lookup is TRUE. Nothing is copied or stored.
+//   • identity_() is the only place an identity is established: from the Google
+//     ID token, verified with Google (audience, verified email, FIS domain, expiry).
+//     Nothing in the request body (email, id) is ever trusted for identity.
+//   • Every handler works on the verified caller's own rows. Nothing returns the roster.
+//   • Errors returned to the client never contain an email (they reach Stackdriver logs).
+//   • The photo is the picture claim of the student's own token, passed through at
+//     runtime. Nothing is copied or stored.
 // =============================================================
 
 // Combine Intro self-prediction ("Strengths & Challenges", Lesson 1). Thirteen
@@ -45,12 +48,11 @@ var TABS = {
 var PROFILE_KEY = 'Email';
 
 var CONFIG_DEFAULTS = {
-  domain:       ['fis.edu', 'Only accounts in this Google Workspace domain are served. Checked on the server as well as by the deployment setting.'],
-  year_label:   ['26/27', 'Shown on the card header'],
-  app_title:    ['My PE Profile', 'Browser tab title'],
-  photo_lookup: ['FALSE', 'TRUE to show the student\'s Google directory photo (runtime only, never stored). Needs the People API advanced service enabled for the script.'],
-  web_fonts:    ['FALSE', 'TRUE to load Archivo + Inter from Google Fonts (sends the viewer\'s IP address to fonts.googleapis.com). FALSE = system fonts, no third-party requests.'],
-  goal_max:     ['140', 'Maximum characters for the student\'s own goal']
+  domain:          ['fis.edu', 'Only Google accounts in this Workspace domain are served (checked on the verified sign-in token).'],
+  oauth_client_id: ['701639243214-ud6m1qtmc6ma0pq6v24tk39afbuhcblv.apps.googleusercontent.com', 'The Google sign-in client the page uses. A token is accepted only if it was issued to this client. Public, not a secret.'],
+  year_label:      ['26/27', 'Shown on the card header'],
+  app_title:       ['My PE Profile', 'App title'],
+  goal_max:        ['140', 'Maximum characters for the student\'s own goal']
 };
 
 // The six PE Styles. Keys are what the Profile tab stores; the client owns the colours.
@@ -127,27 +129,56 @@ function config_() {
 }
 function clearConfigCache() { CacheService.getScriptCache().remove(CACHE_KEY_CONFIG); }
 
-// ---------- Identity (the only place an email is read) ----------
+// ---------- Identity (the only place an identity is established) ----------
+// The page sends the Google ID token from Sign in with Google. It is verified
+// with Google's tokeninfo endpoint (Google to Google; nothing leaves Google),
+// then the claims are checked: issued to our client, verified email, FIS
+// domain, not expired. Verified results are cached by token hash for a few
+// minutes so a class saving at once does not hit tokeninfo on every call.
+var TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo?id_token=';
+var TOKEN_CACHE_SECONDS = 600;
+
+function tokenKey_(token) {
+  return 'tok:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token));
+}
+// Returns { email, name, picture, domainOk } or throws 'Please sign in' (client re-prompts).
+function verifyToken_(cfg, token) {
+  token = str_(token);
+  if (!token || token.length > 4096 || !/^[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]*$/.test(token)) throw new Error('Please sign in');
+  var cache = CacheService.getScriptCache(), key = tokenKey_(token);
+  var hit = cache.get(key);
+  if (hit) { try { return JSON.parse(hit); } catch (e) { /* re-verify */ } }
+  var res = UrlFetchApp.fetch(TOKENINFO_URL + encodeURIComponent(token), { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) throw new Error('Please sign in again');
+  var c; try { c = JSON.parse(res.getContentText()); } catch (e) { throw new Error('Please sign in again'); }
+  var now = Math.floor(Date.now() / 1000), exp = parseInt(c.exp, 10) || 0;
+  if (str_(c.aud) !== str_(cfg.oauth_client_id)) throw new Error('Please sign in again');
+  if (str_(c.email_verified) !== 'true' || !str_(c.email)) throw new Error('Please sign in again');
+  if (exp <= now) throw new Error('Please sign in again');
+  var email = lower_(c.email), dom = lower_(cfg.domain);
+  var domainOk = !dom || (lower_(c.hd) === dom && email.slice(-(dom.length + 1)) === '@' + dom);
+  var out = { email: email, name: str_(c.name), picture: str_(c.picture), domainOk: domainOk };
+  cache.put(key, JSON.stringify(out), Math.max(30, Math.min(TOKEN_CACHE_SECONDS, exp - now)));
+  return out;
+}
+
 // Returns { role, ... }. role is one of:
-//   anonymous     no Google account (deployment misconfigured, or preview)
-//   wrong_domain  signed in, but not an account in the configured domain
-//   student       on the Students tab  → name, klass (and teacher:true if also a teacher)
+//   wrong_domain  a verified Google account outside the configured domain
+//   student       on the Students tab  → email, name, klass, picture (and teacher:true if also a teacher)
 //   teacher       on the Teachers tab, or the Sheet owner, but not on the roster
 //   unknown       a domain account that is on neither tab
-function identity_(cfg) {
-  var email = lower_(Session.getActiveUser().getEmail());
+function identity_(cfg, token) {
+  var v = verifyToken_(cfg, token);
+  if (!v.domainOk) return { role: 'wrong_domain' };
+  var email = v.email;
   var owner = lower_(Session.getEffectiveUser().getEmail());
-  if (!email) return { role: 'anonymous' };
-  var dom = lower_(cfg.domain);
-  if (dom && email.slice(-(dom.length + 1)) !== '@' + dom) return { role: 'wrong_domain' };
   var teacher = email === owner || readTab_('Teachers').some(function (t) { return lower_(t.Email) === email; });
   var me = readTab_('Students').filter(function (r) { return lower_(r.Email) === email; })[0];
-  if (me) return { role: 'student', email: email, name: str_(me.Name), klass: str_(me.Class), teacher: teacher };
+  if (me) return { role: 'student', email: email, name: str_(me.Name), klass: str_(me.Class), picture: v.picture, teacher: teacher };
   if (teacher) return { role: 'teacher', email: email };
   return { role: 'unknown', email: email };
 }
-function requireStudent_(cfg) {
-  var id = identity_(cfg);
+function requireStudent_(id) {
   if (id.role !== 'student') throw new Error('Not signed in with a school account that is on the class list');
   return id;
 }
@@ -172,49 +203,37 @@ function initials_(name) {
   return ((p[0] || '').charAt(0) + (p.length > 1 ? p[p.length - 1].charAt(0) : '')).toUpperCase();
 }
 
-// Google directory photo, runtime only. Off unless Config photo_lookup = TRUE.
-// Tries, in order, whichever advanced services are enabled in the editor
-// (Services → +): People API, then Admin SDK Directory (domain_public view,
-// which any domain user may read when directory sharing is on). The URL is
-// handed to the browser, which loads the image from Google. Nothing is stored.
-// Any failure (service off, no directory access, no photo) falls back to initials.
-function photoUrl_(cfg, email) {
-  if (!bool_(cfg.photo_lookup)) return '';
+// ---------- Web app entry: JSON API ----------
+// The page POSTs { action, token, ...payload } as text/plain (no CORS preflight)
+// and gets { ok:true, data } or { ok:false, error, authRequired }.
+function doPost(e) {
+  var out;
   try {
-    var res = People.People.searchDirectoryPeople({
-      query: email, readMask: 'photos', pageSize: 3,
-      sources: ['DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE']
-    });
-    var people = (res && res.people) || [];
-    for (var i = 0; i < people.length; i++) {
-      var photos = people[i].photos || [];
-      for (var j = 0; j < photos.length; j++) if (photos[j].url && !photos[j].default) return photos[j].url;
-    }
-  } catch (e) { /* try the next service */ }
-  try {
-    var u = AdminDirectory.Users.get(email, { viewType: 'domain_public', projection: 'basic' });
-    if (u && u.thumbnailPhotoUrl && !u.isDefaultPhoto) return u.thumbnailPhotoUrl;
-  } catch (e) { /* fall back to initials */ }
-  return '';
+    var body = {};
+    try { body = JSON.parse((e && e.postData && e.postData.contents) || '{}') || {}; } catch (err) { throw new Error('Bad request'); }
+    out = { ok: true, data: handle_(body) };
+  } catch (err) {
+    var msg = (err && err.message) ? err.message : String(err);
+    out = { ok: false, error: msg, authRequired: /sign in/i.test(msg) };
+  }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
-
-// ---------- Web app entry ----------
-// When built as a single file (dist/Code.gs) the HTML files are embedded here,
-// so there is only one thing to paste into Apps Script.
-var EMBEDDED_HTML = {};
+// Opening the API URL in a browser is not the app; say so, with no data.
 function doGet() {
-  var cfg = config_();
-  var t = EMBEDDED_HTML.Index ? HtmlService.createTemplate(EMBEDDED_HTML.Index) : HtmlService.createTemplateFromFile('Index');
-  t.appTitle = cfg.app_title;
-  t.fontsLink = bool_(cfg.web_fonts)
-    ? '<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">'
-    : '';
-  return t.evaluate()
-    .setTitle(cfg.app_title)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+  return ContentService.createTextOutput(JSON.stringify({ ok: false, error: 'This is the data service for My PE Profile. Open the app link your PE teacher shared.' }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
-function include(name) { return EMBEDDED_HTML[name] !== undefined ? EMBEDDED_HTML[name] : HtmlService.createHtmlOutputFromFile(name).getContent(); }
+function handle_(body) {
+  var cfg = config_();
+  var id = identity_(cfg, body.token);
+  switch (str_(body.action)) {
+    case 'bootstrap':       return bootstrap_(cfg, id);
+    case 'saveStyle':       return saveStyle_(cfg, id, body.style);
+    case 'saveGoal':        return saveGoal_(cfg, id, body.goal);
+    case 'savePrediction':  return savePrediction_(cfg, id, body.checkpoint, body.answers);
+    default: throw new Error('Unknown action');
+  }
+}
 
 // ---------- Reads ----------
 function profileRow_(email) {
@@ -241,9 +260,7 @@ function predictionsFor_(email) {
 function combineFor_(email) { return null; }
 
 // Everything the page needs, for the caller only.
-function bootstrap() {
-  var cfg = config_();
-  var id = identity_(cfg);
+function bootstrap_(cfg, id) {
   var out = {
     role: id.role,
     config: { yearLabel: cfg.year_label, appTitle: cfg.app_title, goalMax: parseInt(cfg.goal_max, 10) || 140 },
@@ -259,7 +276,7 @@ function bootstrap() {
       initials: nm.initials,
       style: STYLES[str_(p.Style)] ? str_(p.Style) : '',
       goal: str_(p.Goal),
-      photoUrl: photoUrl_(cfg, id.email),
+      photoUrl: /^https:\/\/[a-z0-9.-]+\.googleusercontent\.com\//.test(id.picture) ? id.picture : '',
       predictions: predictionsFor_(id.email),
       combine: combineFor_(id.email)
     };
@@ -302,18 +319,16 @@ function upsertProfile_(email, fields) {
   upsert_('Profile', { Email: email }, fields);
 }
 
-function saveStyle(style) {
-  var cfg = config_();
-  var id = requireStudent_(cfg);
+function saveStyle_(cfg, id, style) {
+  requireStudent_(id);
   var key = lower_(style);
   if (!STYLES[key]) throw new Error('Unknown style');
   upsertProfile_(id.email, { Style: key });
   return { ok: true, style: key };
 }
 
-function saveGoal(goal) {
-  var cfg = config_();
-  var id = requireStudent_(cfg);
+function saveGoal_(cfg, id, goal) {
+  requireStudent_(id);
   var max = parseInt(cfg.goal_max, 10) || 140;
   var clean = str_(goal).replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').slice(0, max);
   upsertProfile_(id.email, { Goal: clean });
@@ -323,9 +338,8 @@ function saveGoal(goal) {
 // Save the caller's self-prediction for one checkpoint. `answers` is
 // { cv: { rating, freq }, ... } and must cover all 13 items with valid values.
 // One row per student per checkpoint: saving again overwrites it.
-function savePrediction(checkpoint, answers) {
-  var cfg = config_();
-  var id = requireStudent_(cfg);
+function savePrediction_(cfg, id, checkpoint, answers) {
+  requireStudent_(id);
   var cp = lower_(checkpoint);
   if (PREDICT_CHECKPOINTS.indexOf(cp) === -1) throw new Error('Unknown checkpoint');
   if (!answers || typeof answers !== 'object') throw new Error('Missing answers');
@@ -362,7 +376,7 @@ function setupTabs() {
   var t = tab_('Teachers');
   if (t.getLastRow() < 2) t.getRange(2, 1, 1, 2).setValues([[Session.getEffectiveUser().getEmail(), 'Sheet owner (automatic)']]);
   clearConfigCache();
-  try { SpreadsheetApp.getUi().alert('Tabs are ready. Fill Students (Email · Name · Class), then Deploy → New deployment → Web app: Execute as Me, access Anyone within the school.'); } catch (e) { /* no UI when run headless */ }
+  try { SpreadsheetApp.getUi().alert('Tabs are ready. Fill Students (Email · Name · Class), then Deploy → New deployment → Web app: Execute as Me, Who has access: Anyone.'); } catch (e) { /* no UI when run headless */ }
 }
 
 // Retention: wipes every student-written row (styles, goals, predictions). Roster is untouched.

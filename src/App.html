@@ -7,24 +7,73 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 const $ = (sel, root) => (root || document).querySelector(sel);
 function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' err' : ''); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
 
-// ═══════════════ server bridge ═══════════════
-function rawCall(fn, ...args) {
-  return new Promise((resolve, reject) => {
-    if (!window.google || !google.script || !google.script.run) return reject(new Error('Not running inside the Apps Script web app'));
-    google.script.run.withSuccessHandler(resolve).withFailureHandler(e => reject(new Error(e && e.message ? e.message : String(e)))) [fn](...args);
-  });
+// ═══════════════ sign-in + API bridge ═══════════════
+// The page keeps the Google ID token for the tab session only and sends it with
+// every request. The server verifies it with Google and answers for that
+// student alone. Nothing else identifies the caller.
+const CFG = window.PE_CONFIG || {};
+const TOKEN_KEY = 'pe_token';
+let token = null;
+function tokenExpired(t) {
+  try { const p = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); return !p.exp || p.exp * 1000 < Date.now() + 30000; }
+  catch (e) { return true; }
+}
+function loadToken() { try { const t = sessionStorage.getItem(TOKEN_KEY); if (t && !tokenExpired(t)) return t; } catch (e) {} return null; }
+function keepToken(t) { token = t; try { sessionStorage.setItem(TOKEN_KEY, t); } catch (e) {} }
+function dropToken() { token = null; try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+
+async function rawCall(action, payload) {
+  if (!CFG.apiUrl) throw new Error('This page is not connected to the data service yet');
+  const r = await fetch(CFG.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ action, token }, payload || {})) });
+  const j = await r.json();
+  if (!j || !j.ok) { const e = new Error((j && j.error) || 'Request failed'); e.authRequired = !!(j && j.authRequired); throw e; }
+  return j.data;
 }
 // Apps Script caps simultaneous runs; a whole class tapping at once produces
-// transient "Busy"/timeout errors. Retry those with backoff; permanent ones surface.
-const PERMANENT = /Unknown style|not signed in|class list|Not running inside/i;
+// transient errors. Retry those with backoff; permanent ones surface at once.
+const PERMANENT = /Unknown style|Unknown action|Incomplete|class list|not connected|Bad request/i;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function call(fn, ...args) {
+async function call(action, payload) {
   let delay = (window.__preview && window.__preview.fastRetry) ? 30 : 1200;
   for (let attempt = 0; ; attempt++) {
-    try { return await rawCall(fn, ...args); }
-    catch (e) { if (PERMANENT.test(e.message) || attempt >= 4) throw e; await sleep(delay + Math.random() * delay); delay = Math.min(delay * 2, 15000); }
+    try { return await rawCall(action, payload); }
+    catch (e) {
+      if (e.authRequired) { dropToken(); showSignin('Your sign-in expired. Please sign in again.'); throw e; }
+      if (PERMANENT.test(e.message) || attempt >= 4) throw e;
+      await sleep(delay + Math.random() * delay); delay = Math.min(delay * 2, 15000);
+    }
   }
 }
+
+// ── Sign in with Google (Google Identity Services) ──
+function signinView(msg) {
+  return '<div class="signin"><div class="k">GRADE 8 PE · FIS</div><h1>My PE Profile</h1>' +
+    '<p>Sign in with your <b>FIS Google account</b> to open your profile.</p>' +
+    (msg ? '<p class="note">' + esc(msg) + '</p>' : '') +
+    '<div class="gbtn" id="gbtn"><div class="spinner"></div></div>' +
+    '<p class="small">Only FIS accounts work here. Your name and photo come from your Google account while you’re signed in and are never stored by this page.</p></div>';
+}
+function gisReady(cb) {
+  if (window.google && google.accounts && google.accounts.id) return cb();
+  let n = 0;
+  const t = setInterval(() => {
+    if (window.google && google.accounts && google.accounts.id) { clearInterval(t); cb(); }
+    else if (++n > 100) { clearInterval(t); const el = $('#gbtn'); if (el) el.innerHTML = '<p class="note">Couldn’t load Google sign-in. Check the connection and reload.</p>'; }
+  }, 100);
+}
+let gisInit = false;
+function showSignin(msg) {
+  document.body.classList.remove('dark');
+  $('#app').innerHTML = signinView(msg);
+  gisReady(() => {
+    if (!gisInit) { google.accounts.id.initialize({ client_id: CFG.clientId, callback: onCredential, hd: CFG.domain, auto_select: true, itp_support: true, use_fedcm_for_prompt: true }); gisInit = true; }
+    const el = $('#gbtn'); if (!el) return; el.innerHTML = '';
+    google.accounts.id.renderButton(el, { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', width: 280 });
+    try { google.accounts.id.prompt(); } catch (e) { /* One Tap is optional */ }
+  });
+}
+function onCredential(resp) { if (resp && resp.credential) { keepToken(resp.credential); boot(); } }
+function signOut() { dropToken(); try { google.accounts.id.disableAutoSelect(); } catch (e) {} showSignin(); }
 
 // ═══════════════ PE Styles (visual skins; the server holds the names) ═══════════════
 const SKINS = {
@@ -250,6 +299,10 @@ function message(big, title, body, extra) {
   return '<div class="msg"><div class="big">' + big + '</div><h2>' + esc(title) + '</h2><p>' + body + '</p>' + (extra || '') + '</div>';
 }
 function otherView(b) {
+  const out = '<p class="small"><button type="button" class="lnk" id="signout">Not you? Sign out and use another account</button></p>';
+  return otherView_(b) + out;
+}
+function otherView_(b) {
   switch (b.role) {
     case 'teacher':
       return message('🧑‍🏫', 'Teacher view', 'You’re signed in as <code>' + esc(b.email) + '</code>, which is on the Teachers tab but not the Students tab. Students who open this link see their own profile.',
@@ -259,10 +312,10 @@ function otherView(b) {
         '<p>Tell your PE teacher, or check you opened the link with your FIS account.</p>');
     case 'wrong_domain':
       return message('🔒', 'Use your FIS account', 'This page only works with an FIS Google account.',
-        '<p>Sign out of other Google accounts, or open the link in a window where your FIS account is the active one.</p>');
+        '<p>Sign out and sign in again with your FIS account.</p>');
     default:
-      return message('🙈', 'Couldn’t confirm who you are', 'Google didn’t tell the page which account is signed in.',
-        '<p>Open the link from your FIS account (not incognito). If it keeps happening, tell your PE teacher: the deployment must be "Anyone within FIS".</p>');
+      return message('🙈', 'Couldn’t confirm who you are', 'Google didn’t confirm which account is signed in.',
+        '<p>Sign out and try again. If it keeps happening, tell your PE teacher.</p>');
   }
 }
 
@@ -299,7 +352,7 @@ async function choose(k) {
   const saved = $('#saved'); saved.textContent = 'saving…';
   document.querySelectorAll('.sbtn').forEach(b => b.disabled = true);
   try {
-    const res = await call('saveStyle', k);
+    const res = await call('saveStyle', { style: k });
     state.student.style = res.style; saved.textContent = '✓ saved';
     toast('Saved. You’re ' + state.styles[k] + '.');
   } catch (e) {
@@ -322,7 +375,7 @@ function pick(k, field, val) {
 async function savePrediction() {
   const btn = $('#psave'); btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    const res = await call('savePrediction', CP, draft);
+    const res = await call('savePrediction', { checkpoint: CP, answers: draft });
     state.student.predictions = Object.assign({}, state.student.predictions, { [CP]: res.prediction });
     show('summary');
   } catch (e) { btn.disabled = false; btn.textContent = 'Save my prediction'; toast('Couldn’t save: ' + e.message, true); }
@@ -361,17 +414,19 @@ function show(v) {
 
 function render(b) {
   state = b;
-  if (b.role !== 'student') { $('#app').innerHTML = otherView(b); return; }
+  if (b.role !== 'student') { document.body.classList.remove('dark'); $('#app').innerHTML = otherView(b); wire('signout', signOut); return; }
   show(b.student.style ? 'profile' : 'card'); // first visit goes straight to "build your card"
 }
 
 $('#ov').addEventListener('click', e => { if (e.target === e.currentTarget || e.target.closest('[data-close]')) closeOv(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOv(); });
 
-async function main() {
+async function boot() {
+  $('#app').innerHTML = '<div class="loading"><div class="spinner"></div>Loading your profile…</div>';
   try { render(await call('bootstrap')); }
-  catch (e) { $('#app').innerHTML = message('⚠️', 'Couldn’t load your profile', esc(e.message), '<p><a class="btn" href="javascript:location.reload()">Try again</a></p>'); }
+  catch (e) { if (e.authRequired) return; $('#app').innerHTML = message('⚠️', 'Couldn’t load your profile', esc(e.message), '<p><a class="btn" href="javascript:location.reload()">Try again</a></p><p class="small"><button type="button" class="lnk" id="signout">Sign out</button></p>'); wire('signout', signOut); }
 }
+function main() { token = loadToken(); if (token) boot(); else showSignin(); }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', main); else main();
 })();
 </script>

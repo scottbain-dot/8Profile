@@ -12,11 +12,11 @@ minors under GDPR, so it is built to keep everything inside the FIS Google Works
 | Controller | Frankfurt International School |
 | Processor | Google (Workspace for Education, under the existing FIS agreement). No other processor. |
 | Where data lives | One Google Sheet owned by the PE teacher's FIS account, inside the FIS Workspace |
-| Where code runs | Google Apps Script, bound to that Sheet, in the FIS Workspace |
-| Who can open the app | Only signed-in `@fis.edu` accounts (deployment setting *and* a server-side check) |
-| What a student sees | Their own row only. The class list never reaches a browser. |
-| Third parties | None by default. No CDNs, analytics, trackers or cookies beyond Google's session. |
-| This repository | Code only. No data, no IDs, no secrets. Test data is synthetic (`example.edu`). |
+| Where code runs | The page is static HTML served by GitHub Pages (no data on it). All data handling runs in Google Apps Script bound to that Sheet, in the FIS Workspace. |
+| Who can use the app | Only verified `@fis.edu` Google accounts: every request carries a Google sign-in token that the server verifies with Google before answering |
+| What a student sees | Their own rows only. The class list never reaches a browser. |
+| Third parties | GitHub serves the page code (no data). Google provides sign-in and hosts the data. No analytics, trackers, or cookies beyond Google's session. |
+| This repository | Code only. No data, no secrets. Test data is synthetic (`example.edu`). |
 
 ## Data inventory (v1)
 
@@ -36,26 +36,32 @@ already held by the school).
 
 ## Data flows
 
-1. **Sign-in.** Google authenticates the student on the FIS domain. The app never sees a
-   password or token. The script reads the verified address with
-   `Session.getActiveUser().getEmail()` on the server. `identity_()` in `src/Code.gs` is
-   the only place this happens.
-2. **Domain check.** The deployment is restricted to the FIS Workspace, and the server
-   additionally refuses any address outside the configured domain.
-3. **Read.** `bootstrap()` matches the address against the Students tab and returns that
-   one row plus that student's Profile row. No function returns the roster or any other
-   student's data. The response does not even contain the student's own email.
-4. **Write.** `saveStyle()` / `saveGoal()` / `savePrediction()` validate the values and
-   upsert one row keyed by the *server-verified* address (plus checkpoint for
-   predictions). The client cannot choose whose row is written; an incomplete or
-   malformed prediction is rejected whole.
-5. **Photo (optional, off by default).** With Config `photo_lookup` = TRUE and the People
-   API service enabled, the server looks up the student's own Google directory photo and
-   returns its URL. The browser loads the image straight from Google. Nothing is copied,
-   stored or logged. Initials are shown when there is no photo or the lookup is off.
-6. **Logs.** Apps Script keeps execution logs in Google Cloud (Stackdriver) for the FIS
-   project. The code never logs emails or data, and error messages thrown to users are
-   written so they contain no email.
+1. **Page load.** The browser fetches `index.html` from GitHub Pages. It contains no data
+   and makes no request except to load Google's sign-in library.
+2. **Sign-in.** Google Identity Services signs the student in on the FIS domain and hands
+   the page a Google ID token (name, email, photo URL, expiry, signed by Google). The page
+   never sees a password. The token is kept in the tab's session storage only and is
+   discarded when the tab closes or the token expires (about an hour).
+3. **Request.** The page sends `{ action, token, ...payload }` to the Apps Script API.
+4. **Verification.** `verifyToken_()` in `src/Code.gs` asks Google's `tokeninfo` endpoint
+   whether the token is genuine (a Google-to-Google call from the FIS script), then checks
+   it was issued to the FIS sign-in client, that the email is verified, that the account is
+   on the `fis.edu` domain, and that it has not expired. Verified results are cached in
+   Apps Script's cache for up to ten minutes, keyed by a hash of the token. This is the
+   only place an identity is established. Nothing else in the request (an email, an ID) is
+   ever used as identity.
+5. **Read.** `bootstrap_()` matches the verified address against the Students tab and
+   returns that one row plus that student's Profile and Predictions rows. No function
+   returns the roster or any other student's data. The response does not contain the
+   student's own email.
+6. **Write.** `saveStyle_()` / `saveGoal_()` / `savePrediction_()` validate the values and
+   upsert one row keyed by the *verified* address (plus checkpoint for predictions). An
+   incomplete or malformed prediction is rejected whole.
+7. **Photo.** The `picture` claim of the student's own token, a URL on Google's servers, is
+   passed back so the page can show it while signed in. Nothing is copied, stored or logged.
+8. **Logs.** Apps Script keeps execution logs in Google Cloud (Stackdriver) for the FIS
+   project. The code never logs emails, tokens or data, and error messages sent to users
+   contain no email.
 
 ## Google API scopes (least privilege)
 
@@ -64,22 +70,27 @@ Declared in `src/appsscript.json`:
 | Scope | Why |
 |---|---|
 | `spreadsheets.currentonly` | Read/write the one Sheet the script is bound to. No access to other Drive files. |
-| `userinfo.email` | Learn the signed-in user's address (the identity check). |
-| *(optional)* People API directory read | Only if the photo feature is switched on; added by enabling the service. |
+| `script.external_request` | Call Google's `tokeninfo` endpoint to verify sign-in tokens. The only URL the script fetches. |
+| `userinfo.email` | Identify the Sheet owner (teacher) inside the script. |
 
-The script runs as the teacher account, so students are never asked to grant scopes and
-need no access to the Sheet.
+The Google sign-in client requests only the basic profile (name, email, photo) that Sign in
+with Google always provides. The script runs as the teacher account, so students are never
+asked to grant scopes and need no access to the Sheet.
+
+The web app is deployed with access "Anyone" so that a page on GitHub Pages can call it.
+That setting does not expose data: without a valid FIS token every request is refused
+with "Please sign in", and the API URL opened in a browser returns a one-line note.
 
 ## Third-party requests
 
-- Default: none. Fonts use the system stack.
-- Config `web_fonts` = TRUE loads Archivo and Inter from `fonts.googleapis.com`, which
-  sends the viewer's IP address to Google outside the Workspace agreement. German courts
-  have treated remote Google Fonts as a GDPR issue (LG München, 2022). Recommendation:
-  leave it off, or embed the fonts in the page in a later change.
-- The PNG "download my card" feature from the mockups uses the `html2canvas` library
-  from a CDN. It is **not** in the app. It will be added only with the library vendored
-  into the repo, so no third-party request is made.
+- GitHub Pages serves the page code. GitHub sees the request for the page (IP address,
+  as for any website) but never any student data; nothing is sent back to GitHub.
+- Google: the sign-in library from `accounts.google.com`, the sign-in itself, the
+  Apps Script API, and the student's own photo URL. All within Google.
+- No analytics, no fonts from third parties (system fonts are used), no other requests.
+- The PNG "download my card" feature from the mockups uses the `html2canvas` library from
+  a CDN. It is **not** in the app. It will be added only with the library vendored into
+  the repo, so no third-party request is made.
 
 ## Retention & deletion
 
@@ -89,7 +100,8 @@ need no access to the Sheet.
 - Students and Teachers tabs are the school's existing roster data; retention follows the
   school's roster policy.
 - A single student's data can be removed by deleting their row(s) in the Sheet.
-- No copies exist outside the Sheet: no browser storage beyond the current page, no
+- No copies exist outside the Sheet: the browser holds only the sign-in token for the tab
+  session (about an hour) and a per-tab draft of the prediction until it is saved; no
   exports, no emails.
 
 ## Points to confirm with the data-protection lead before go-live
@@ -100,7 +112,7 @@ need no access to the Sheet.
 2. **Retention period** for Profile rows and, in later phases, for assessment data shown
    in the app (proposal above).
 3. **Google directory photo.** Showing the account photo inside a school app is
-   arguably within existing Workspace use, but confirm before enabling `photo_lookup`.
+   arguably within existing Workspace use, but confirm it. (It is the picture on the sign-in token.)
 4. **Web fonts.** Keep off unless approved (see above).
 5. **Teacher accounts.** Teachers see only a teacher screen in v1. Later phases may add a
    teacher "view a student's profile" function; that is a new access path and should be
@@ -114,11 +126,11 @@ need no access to the Sheet.
 
 ## The GitHub Pages address
 
-`index.html` at the repo root is published on GitHub Pages as a short, memorable front
-door. It contains no data and no tracking: it forwards the browser to the Apps Script
-`/exec` URL and nothing else. That URL is therefore public, which is acceptable because
-access to the app is enforced by Google (FIS accounts only), not by keeping the address
-secret. The page and the profile app never exchange data.
+`index.html` at the repo root is the student page, published on GitHub Pages. It contains
+no data: it signs the student in with Google and asks the FIS Apps Script API for that
+student's own rows. The API URL and the sign-in client ID are visible in the page. That is
+acceptable because access is enforced by Google sign-in and the server's token check, not by
+keeping those values secret.
 
 ## Repository hygiene
 

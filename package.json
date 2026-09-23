@@ -6,9 +6,9 @@
   "scripts": {
     "test": "node dev/test-server.js",
     "preview": "node dev/build-preview.js",
-    "build": "node dev/build-single.js",
+    "build": "node dev/build-site.js && node dev/build-single.js",
     "smoke": "node dev/build-preview.js && node dev/smoke.js",
-    "check": "node dev/test-server.js && node dev/build-single.js"
+    "check": "node dev/test-server.js && node dev/build-site.js && node dev/build-single.js"
   },
   "license": "UNLICENSED"
 }

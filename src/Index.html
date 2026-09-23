@@ -1,17 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<base target="_top">
-<title><?= appTitle ?></title>
-<?!= fontsLink ?>
-<?!= include('Styles') ?>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>My PE Profile · Grade 8</title>
+<!--
+  G8 PE Profile — student page (GitHub Pages). Built from src/ by dev/build-site.js.
+  Holds no data: it signs the student in with Google and asks the FIS Apps Script
+  API for that student's own rows. See PRIVACY.md.
+-->
+<!--STYLES-->
 </head>
 <body>
-<div id="app"><div class="loading"><div class="spinner"></div>Loading your profile…</div></div>
+<div id="app"><div class="loading"><div class="spinner"></div>Loading…</div></div>
 <div class="ov" id="ov"><div class="ovcard" id="ovcard"></div></div>
 <div class="toast" id="toast"></div>
-<?!= include('Rubrics') ?>
-<?!= include('App') ?>
+<!--GSI-->
+<!--CONFIG-->
+<!--RUBRICS-->
+<!--APP-->
 </body>
 </html>

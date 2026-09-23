@@ -1,45 +1,52 @@
 # Plan — G8 PE Profile
 
-Status: **v1 deployed to the FIS Sheet and working for the owner account; profile look + photo added.** Last updated 2026-09-22.
+Status: **rebuilt as GitHub Pages + token-verified API after the student web filter blocked Google-hosted script pages; passing local checks, awaiting redeploy.** Last updated 2026-09-23.
 
 ## Decisions taken (and why)
 
 | Decision | Choice | Reason |
 |---|---|---|
-| Sign-in pattern | **Reuse `net-games`**: Apps Script web app inside the Sheet, `Session.getActiveUser()` server-side, deployed *Execute as Me* + *Anyone within fis.edu* | Proven with FIS students already; every privacy rule in the brief falls out of it. The `aa-dash` pattern (static GitHub Pages + Google Identity Services) sends a client-supplied email to Apps Script with no server verification or domain check, so anyone who knows an address could read that record. Not acceptable here. |
-| Execute as *Me*, not *user accessing* | Me (the Sheet owner) | The brief suggested "execute as user". That would require every student to have read access to the Sheet (exposing the whole roster) and to grant scopes. Executing as owner keeps students out of the Sheet; the server filters to their own row. |
-| Static hosting | None | Code and data both stay inside Google. The repo is the source; `dist/Code.gs` is pasted into the Sheet's script. |
-| Fonts | System stack by default; Google Fonts behind Config `web_fonts` (off) | Remote Google Fonts is a known GDPR issue in Germany. The DP lead can flip it or we embed the fonts later. |
+| Where the page lives | **GitHub Pages**, like the other FIS PE apps; Apps Script is a JSON API only | The first build served the page from Apps Script (`HtmlService`, "Anyone within FIS"). It worked for staff, but the student web filter blocks navigations to Google-hosted script pages, while pages on `scottbain-dot.github.io` calling Apps Script in the background are proven on student devices (aa-dash). |
+| Identity | Google ID token from Sign in with Google, **verified server-side** with Google's tokeninfo endpoint (audience, verified email, `hd` = fis.edu, expiry), cached by token hash | The aa-dash shape done properly: the server never trusts a client-supplied email or ID. Same guarantee as the earlier `Session.getActiveUser()` design, without the Google-hosted page. |
+| Deployment access | "Anyone", execute as owner | Required for a cross-origin page to call the API. Data access is gated by the token check, not the deployment setting. |
+| Photo | The `picture` claim of the student's own token | Free with sign-in, runtime only, no directory APIs or admin settings. |
+| Fonts | System stack | No third-party font requests; the deck (teacher-facing) keeps Google Fonts for the projector. |
 | Display font | Archivo (brief) with Barlow Condensed → system fallback | The Build-Your-Card mockup uses Archivo; the profile/card mockups use Barlow Condensed. Brief says Archivo. |
-| Photo | Google directory photo via People API, runtime only, behind Config `photo_lookup` (off) | "Execute as Me" gives no direct handle on the *caller's* photo; the directory lookup is the least-privilege route. Falls back to initials. Needs a tenant check (below). |
 | Card download | Deferred | Needs `html2canvas`; ship only when vendored (no CDN). Not in the v1 definition of done. |
 | Profile key | Server-verified email | Simplest correct key; the client never supplies it. If the DP lead prefers pseudonymous IDs, add a `StudentID` column to Students and key Profile on it (one-line change in `PROFILE_KEY`). |
 | Teacher view (v1) | A plain teacher screen | Any "view as student" function is a new access path; design it with the DP review in v2. |
 
-## Make-or-break checks on first deploy (cannot be verified from here)
+## Checks on deploy
 
-1. **Students can open a domain-restricted web app in the FIS tenant.** `net-games` is
-   precedent that they can. Confirm with one dummy student account on this deployment.
-2. **`Session.getActiveUser().getEmail()` returns the student's address** when the app
-   executes as the owner. It does for same-domain Workspace users (again, `net-games`).
-3. **People API directory search returns photos** for a non-admin owner account with
-   `DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE`. Depends on FIS directory-sharing settings.
-   If not, students see initials and nothing breaks.
-4. A **non-FIS Google account is refused** at the Google layer (deployment access) and,
-   belt-and-braces, at `identity_()`.
+1. **Sign-in works from the GitHub origin**: the FIS sign-in client lists
+   `https://scottbain-dot.github.io` as an authorised JavaScript origin (it does; the other
+   portals use it).
+2. **A student on the roster** sees their own profile, and their photo if their Google
+   account has one.
+3. **A non-FIS Google account** gets "Use your FIS account"; an FIS account not on the
+   roster gets "Not on the Grade 8 list".
+4. **The API URL opened directly** shows only the one-line note.
 
 ## Milestones
+
+### v1.2 — GitHub Pages + token-verified API  ✅ built
+- [x] Page built to `index.html` from `src/` (`dev/build-site.js`), served by GitHub Pages
+- [x] Sign in with Google on the page; token kept for the tab session; sign-out
+- [x] Apps Script as JSON API: `doPost` → `verifyToken_` (tokeninfo, aud, email_verified, hd, exp, cached) → `identity_` → handlers
+- [x] Photo from the token's picture claim (Google-hosted URLs only)
+- [x] Fake sign-in + fake API in the preview; 52 server checks, 45 browser checks
+- [ ] Deploy: paste `dist/Code.gs` + manifest, re-authorise, access "Anyone", new version
 
 ### v1 — sign-in → greet → pick style (saved) → teaser  ✅ scaffolded
 - [x] Server: tabs, config, identity, bootstrap (own row only), saveStyle/saveGoal, menu, retention wipe
 - [x] Client: profile page in the mockup's look (teaser card strip, goals, at-a-glance, fitness, nine skill ladders from the Rubric Bank, game skills, participation, report bands, tap-to-open overlays) with every section in its "fills in at the Combine" state; "Build my card" screen with the six-style picker and live reskin; first visit lands on the builder, later visits on the profile
 - [x] Roster names in "Last, First" form: greet by first name, ignore the initial
-- [x] Google photo: People API, then Admin Directory fallback; `src/appsscript.photo.json` turns it on
+- [x] Google photo (now from the sign-in token; the directory lookup was removed with the move to GitHub Pages)
 - [x] Non-student screens: teacher, not-on-list, wrong domain, anonymous, load error
 - [x] Dev: fake Sheets runtime, browser preview with synthetic roster, single-file build, 29 server checks, 14 browser smoke checks
 - [x] Docs: README (deploy), PRIVACY (for DP lead), this plan, CLAUDE.md
-- [x] Deployed to the FIS Sheet; owner sees own profile (check 1 & 2 pass for a teacher account)
-- [ ] Confirm with one **student** account, and enable the photo via `appsscript.photo.json` (check 3)
+- [x] Deployed to the FIS Sheet; owner saw own profile on the HtmlService version
+- [ ] Redeploy as API (see v1.2) and confirm with one **student** account
 - [ ] Share `PRIVACY.md` with the DP lead; record the answers to its six questions
 - [ ] Go-live: fill Students, share the `/exec` link
 

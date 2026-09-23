@@ -6,43 +6,752 @@
 <meta name="robots" content="noindex">
 <title>My PE Profile · Grade 8</title>
 <!--
-  GitHub Pages front door for the G8 PE Profile. It only forwards to the
-  Apps Script web app, which runs inside the FIS Google Workspace and is
-  restricted to FIS accounts by Google. No data, no tracking, no cookies here.
-  Set APP_URL below to the deployment's /exec URL (Deploy → Manage deployments).
+  G8 PE Profile — student page (GitHub Pages). Built from src/ by dev/build-site.js.
+  Holds no data: it signs the student in with Google and asks the FIS Apps Script
+  API for that student's own rows. See PRIVACY.md.
 -->
 <style>
-  :root{--maroon:#6f1d2c;--gold:#e7b64b}
-  body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at 50% 0%,#2a2024,#120d0e);color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;text-align:center;padding:24px}
-  .k{font-weight:700;letter-spacing:.22em;font-size:13px;color:var(--gold)}
-  h1{font-size:clamp(26px,5vw,40px);margin:8px 0 6px}
-  p{color:#c8bcbe;font-size:15px;max-width:38ch;margin:0 auto 18px;line-height:1.5}
-  a.btn{display:inline-block;background:linear-gradient(145deg,#f3d689,#c9982f);color:#3a1008;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:12px}
-  .spin{width:22px;height:22px;border:3px solid #3a2e31;border-top-color:var(--gold);border-radius:50%;animation:s .9s linear infinite;margin:0 auto 14px}
-  @keyframes s{to{transform:rotate(360deg)}}
-  .warn{background:#241d20;border:1px solid #3a2e31;border-radius:12px;padding:12px 16px;font-size:13px;color:#c8bcbe}
+/* Visual system from design/My_PE_Profile_mockup.html (profile, light) and
+   design/G8_Build_Your_Card.html (card, dark). FIS maroon + gold, Archivo + Inter
+   with a system fallback unless Config web_fonts = TRUE. */
+:root{
+  --maroon:#6f1d2c;--maroon-t:#f3e6e8;--gold:#e7b64b;
+  --fit:#e8730c;--fit-t:#fdecdc;--fund:#0e8f86;--fund-t:#d9f2f0;--skill:#2f6df0;--skill-t:#e8f0fe;
+  --ap:#1f9d57;--ap-t:#e6f6ec;--rep:#8a3bb0;--rep-t:#f3e8fa;
+  --ink:#161213;--ink-soft:#463c3e;--muted:#7a6f71;--paper:#f7f4f2;--card:#fff;--line:#e7e0df;
+  --disp:"Archivo","Barlow Condensed","Arial Narrow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  /* card skin — set by the chosen PE Style */
+  --ink1:#7d2233;--ink2:#6f1d2c;--ink3:#4a1019;--acc:#e7b64b;--accs:#f3d689;--rib:#3a1008;
+  --frame:linear-gradient(145deg,#e0a566,#a15c2b 50%,#7a441f 62%,#d68a4e); /* bronze */
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+body.dark{background:radial-gradient(circle at 50% 0%,#2a2024,#120d0e);color:#fff}
+button{font:inherit}
+.wrap{max-width:940px;margin:0 auto;padding:24px 16px 60px}
+
+/* loading / toast */
+.loading{display:flex;align-items:center;gap:12px;justify-content:center;padding:80px 0;color:var(--muted);font-size:14px}
+.spinner{width:22px;height:22px;border:3px solid var(--line);border-top-color:var(--maroon);border-radius:50%;animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13.5px;font-weight:500;opacity:0;pointer-events:none;transition:.2s;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:60}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.err{background:#ffd9d9;color:#7a1414}
+
+/* ── profile view (light) ───────────────────────────────────────── */
+.topline{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.demo-tag{display:inline-block;font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:999px;padding:3px 11px}
+.yearlab{font-family:var(--disp);font-weight:700;font-size:12px;letter-spacing:.14em;color:var(--maroon)}
+.cardteaser{display:flex;align-items:center;gap:16px;background:linear-gradient(135deg,var(--ink1),var(--ink2) 55%,var(--ink3));border:1px solid #c9982f;border-radius:16px;padding:13px 18px;margin:6px 0 10px;position:relative;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.28),0 0 18px rgba(231,182,75,.4);flex-wrap:wrap;transition:background .3s}
+.cardteaser::after{content:"";position:absolute;top:-60%;left:-70%;width:45%;height:220%;background:linear-gradient(115deg,transparent,rgba(255,255,255,.28),transparent);transform:rotate(9deg);animation:sweep 4.2s ease-in-out infinite;pointer-events:none}
+@keyframes sweep{0%{left:-70%}62%,100%{left:150%}}
+@media(prefers-reduced-motion:reduce){.cardteaser::after,.card,.cinner::after{animation:none}}
+.ct-av{width:52px;height:52px;border-radius:50%;overflow:hidden;border:2px solid var(--acc);flex:none;position:relative;z-index:2;background:rgba(0,0,0,.25);display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:20px;color:var(--accs)}
+.ct-av img{width:100%;height:100%;object-fit:cover;display:block}
+.ct-id{position:relative;z-index:2;min-width:150px;flex:1}
+.ct-name{font-family:var(--disp);font-weight:700;font-size:22px;color:#fff;line-height:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ct-tier{font-family:var(--disp);font-size:11px;font-weight:700;color:var(--rib);background:var(--frame);padding:2px 8px;border-radius:20px}
+.ct-sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px}
+.ct-arch{font-family:var(--disp);font-weight:600;font-size:13px;color:var(--accs);margin-top:3px}
+.ct-stats{display:flex;gap:16px;position:relative;z-index:2;margin-left:6px}
+.ct-stats div{text-align:center}.ct-stats b{font-family:var(--disp);font-size:18px;color:#fff;display:block;line-height:1}
+.ct-stats span{font-size:9px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.04em}
+.ct-btn{margin-left:auto;position:relative;z-index:2;background:linear-gradient(145deg,#f3d689,#c9982f);color:#3a1008;font-family:var(--disp);font-weight:700;font-size:14px;text-decoration:none;padding:9px 16px;border-radius:10px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.25);border:none;cursor:pointer}
+.ct-btn:hover{filter:brightness(1.06)}
+.ct-btn.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 3px 8px rgba(0,0,0,.25)}50%{box-shadow:0 3px 8px rgba(0,0,0,.25),0 0 0 6px rgba(231,182,75,.25)}}
+.goals{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 8px}
+.goals .hd{font-family:var(--disp);font-weight:600;font-size:17px;margin:0 0 6px}
+.goals .empty{font-size:12.5px;color:var(--muted)}
+h3.sec{font-family:var(--disp);font-weight:600;font-size:22px;margin:30px 0 3px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+h3.sec .em{font-size:16px;width:31px;height:31px;border-radius:9px;display:inline-grid;place-items:center;background:var(--maroon-t)}
+.seclede{font-size:12.5px;color:var(--muted);margin:0 0 13px}
+.tap{font-size:10.5px;font-weight:600;font-family:var(--disp);color:var(--muted)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:760px){.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.grid3,.grid4{grid-template-columns:1fr}}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px 14px;cursor:pointer;transition:.15s;position:relative;text-align:left;width:100%;color:var(--ink)}
+.tile:hover{box-shadow:0 5px 16px rgba(0,0,0,.08);transform:translateY(-1px)}
+.tile:focus-visible{outline:2px solid var(--maroon);outline-offset:2px}
+.tile .tnrow{display:flex;align-items:center;gap:6px}.tile .em{font-size:15px}.tile .tn{font-weight:600;font-size:13px}
+.tile .tsub{font-size:11px;color:var(--muted);margin:1px 0 10px;min-height:13px}
+.tile .plus{position:absolute;top:11px;right:12px;color:#c9c1c0;font-size:14px;line-height:1}
+.track{display:flex;gap:4px}.track i{height:9px;border-radius:3px;flex:1;background:#ece7e6}
+.tracklab{font-family:var(--disp);font-size:12px;font-weight:600;margin-top:6px;color:var(--muted)}
+.rung{font-family:var(--disp);font-size:11px;color:var(--muted);margin-top:5px}
+.measure{font-family:var(--disp);font-weight:700;font-size:22px;line-height:1;color:#c9c1c0}.measure small{font-size:11px;color:var(--muted);font-weight:400}
+.a-fit .track i.on{background:var(--fit)}.a-fund .track i.on{background:var(--fund)}.a-skill .track i.on{background:var(--skill)}.a-ap .track i.on{background:var(--ap)}
+.fhero{background:var(--fit-t);border:1.5px solid var(--fit);border-radius:14px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:13px;margin-bottom:12px;transition:.15s;width:100%;text-align:left;color:var(--ink)}
+.fhero:hover{box-shadow:0 5px 16px rgba(232,115,12,.15)}
+.fhero .fx{font-size:22px;flex:none}.fhero .fm{flex:1}.fhero .fm .n{font-weight:600;font-size:15px}.fhero .fm .s{font-size:12px;color:var(--ink-soft)}
+.fhero .fv{font-family:var(--disp);font-weight:700;font-size:24px;color:var(--fit);text-align:right;line-height:1}.fhero .fv span{font-size:11px;color:var(--muted);font-weight:400;display:block}
+.band{background:var(--ink);border-radius:14px;padding:15px 16px;cursor:pointer;color:#fff;transition:.15s;position:relative;text-align:left;width:100%;border:none}
+.band:hover{box-shadow:0 6px 18px rgba(0,0,0,.18);transform:translateY(-1px)}
+.band .bn{font-family:var(--disp);font-weight:700;font-size:17px;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+.band .btrack{display:flex;gap:3px;margin-bottom:6px}.band .btrack i{height:7px;flex:1;border-radius:2px;background:#4a3b3e}.band .btrack i.on{background:#d7a6ec}
+.band .blab{font-family:var(--disp);font-size:12px;color:#bfb0c4;font-weight:600}.band .plus{position:absolute;top:13px;right:14px;color:#9a8aa0;font-size:15px}
+.foot{margin-top:22px;border:1px solid var(--line);background:#fff;border-radius:14px;padding:14px 18px;font-size:13px;color:var(--ink-soft);display:flex;gap:11px;align-items:center}.foot b{color:var(--maroon)}
+.foot .arrow{font-family:var(--disp);font-size:24px;color:var(--maroon)}
+.sec-glance,.sec-refl{color:var(--maroon)}.sec-fit{color:var(--fit)}.sec-fit .em{background:var(--fit-t)}.sec-fund{color:var(--fund)}.sec-fund .em{background:var(--fund-t)}.sec-skill{color:var(--skill)}.sec-skill .em{background:var(--skill-t)}.sec-ap{color:var(--ap)}.sec-ap .em{background:var(--ap-t)}.sec-rep{color:var(--rep)}.sec-rep .em{background:var(--rep-t)}
+
+/* overlay */
+.ov{position:fixed;inset:0;background:rgba(22,18,19,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}.ov.show{display:flex}
+.ovcard{background:var(--card);color:var(--ink);border-radius:18px;max-width:470px;width:100%;padding:22px 24px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:pop .16s ease;max-height:90vh;overflow:auto}
+@keyframes pop{from{transform:scale(.96);opacity:.4}to{transform:scale(1);opacity:1}}
+.ovcard .x{float:right;border:none;background:#f0eae9;width:30px;height:30px;border-radius:9px;font-size:16px;cursor:pointer;color:var(--ink-soft)}
+.ovcard h4{font-family:var(--disp);font-weight:700;font-size:22px;margin:2px 0 2px;display:flex;align-items:center;gap:7px}.ovcard .om{font-size:12.5px;color:var(--muted);margin:0 0 15px}
+.ovnow{background:var(--maroon-t);border-left:3px solid var(--maroon);border-radius:0 9px 9px 0;padding:11px 14px;margin-bottom:9px}
+.ovnow .l{font-family:var(--disp);font-size:12px;font-weight:600;color:var(--maroon);letter-spacing:.04em;margin-bottom:3px}.ovnow .t{font-size:13.5px;color:var(--ink);line-height:1.5}
+.ovnext{border:1px dashed var(--line);border-radius:9px;padding:11px 14px}.ovnext .l{font-family:var(--disp);font-size:12px;font-weight:600;color:var(--ink-soft);letter-spacing:.04em;margin-bottom:3px}.ovnext .t{font-size:13px;color:var(--ink-soft);line-height:1.5}
+.lad{border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-bottom:6px;font-size:12.5px;color:var(--ink-soft);display:flex;gap:9px;align-items:flex-start}
+.lad .lv{font-family:var(--disp);font-weight:700;font-size:13px;color:var(--muted);flex:none;width:20px}
+.ovfeeds{font-size:12px;color:var(--muted);margin-top:14px;border-top:1px solid var(--line);padding-top:10px}.ovfeeds b{color:var(--ink-soft)}
+
+/* ── card view (dark) ───────────────────────────────────────────── */
+.back{display:inline-flex;align-items:center;gap:6px;color:#c8bcbe;text-decoration:none;font-size:13px;background:none;border:1px solid #3a2e31;border-radius:999px;padding:6px 14px;cursor:pointer}
+.back:hover{border-color:#5a4a4e;color:#fff}
+.hero{text-align:center;margin:10px 0 22px}
+.hero .k{font-family:var(--disp);font-weight:700;letter-spacing:.22em;font-size:13px;color:var(--gold)}
+.hero h1{font-family:var(--disp);font-weight:800;font-size:clamp(30px,5vw,52px);margin:6px 0 4px;letter-spacing:-.01em}
+.hero p{color:#c8bcbe;font-size:14px;margin:0}
+.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:34px;align-items:start}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.step{font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.14em;color:var(--gold);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.step .saved{font-size:11px;letter-spacing:.04em;color:#7fe0a8;text-transform:none;font-weight:600}
+.styles{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+@media(max-width:420px){.styles{grid-template-columns:1fr}}
+.sbtn{background:#241d20;border:1.5px solid #3a2e31;border-radius:14px;padding:15px 14px;cursor:pointer;transition:.15s;text-align:left;color:#fff;width:100%}
+.sbtn:hover{border-color:#5a4a4e;transform:translateY(-1px)}
+.sbtn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.sbtn.sel{border-color:var(--acc);background:#2e2528;box-shadow:0 6px 18px rgba(231,182,75,.2)}
+.sbtn[disabled]{opacity:.6;cursor:progress}
+.sbtn .se{font-size:24px}.sbtn .sn{font-family:var(--disp);font-weight:700;font-size:16px;margin:5px 0 2px}
+.sbtn .sd{font-size:11.5px;color:#c8bcbe;line-height:1.35}
+.cardstage{display:flex;flex-direction:column;align-items:center;gap:14px;position:sticky;top:18px}
+.card{width:min(360px,100%);border-radius:24px;padding:4px;background:var(--frame);box-shadow:0 26px 64px rgba(0,0,0,.55),0 0 30px rgba(231,182,75,.35);animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-.4deg)}50%{transform:translateY(-8px) rotate(.4deg)}}
+.cinner{background:linear-gradient(160deg,var(--ink1),var(--ink2) 42%,var(--ink3));border-radius:20px;padding:17px 19px;position:relative;overflow:hidden;transition:.3s}
+.cinner::after{content:"";position:absolute;top:-60%;left:-75%;width:55%;height:220%;background:linear-gradient(115deg,transparent,rgba(255,255,255,.42),transparent);transform:rotate(9deg);animation:sweep 4.2s ease-in-out infinite;pointer-events:none}
+.chd{display:flex;justify-content:space-between;align-items:center;font-family:var(--disp);font-weight:700;font-size:11px;color:var(--acc);position:relative;z-index:2}
+.ctier{font-family:var(--disp);font-weight:700;font-size:10px;color:var(--rib);background:var(--frame);padding:2px 9px;border-radius:20px}
+.cwho{display:flex;align-items:center;gap:10px;margin-top:10px;position:relative;z-index:2}
+.cav{width:44px;height:44px;border-radius:50%;overflow:hidden;border:2px solid var(--acc);background:rgba(0,0,0,.25);display:grid;place-items:center;font-family:var(--disp);font-weight:700;font-size:17px;color:var(--accs);flex:none}
+.cav img{width:100%;height:100%;object-fit:cover;display:block}
+.cname{font-family:var(--disp);font-weight:800;font-size:24px;line-height:1;text-transform:uppercase;word-break:break-word;color:#fff}
+.cclass{font-size:11px;color:rgba(255,255,255,.72);margin-top:2px}
+.crib{background:linear-gradient(90deg,var(--acc),var(--accs));border-radius:9px;padding:6px 13px;font-family:var(--disp);font-weight:700;color:var(--rib);margin:11px 0;display:flex;justify-content:space-between;align-items:center;font-size:18px;position:relative;z-index:2}
+.crad{position:relative;z-index:2;margin:2px 0}
+.rlabel{font-family:var(--disp);font-size:9px;fill:rgba(255,255,255,.82);font-weight:600}
+.rnote{font-family:var(--body);font-size:10px;fill:rgba(255,255,255,.6)}
+.cstat{display:flex;gap:7px;margin-top:6px;position:relative;z-index:2}
+.cstat div{flex:1;background:rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.18);border-radius:9px;padding:8px;text-align:center}
+.cstat b{font-family:var(--disp);font-size:18px;display:block;color:#fff}.cstat span{font-size:8px;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.05em}
+.cbadge{display:flex;gap:9px;justify-content:center;margin-top:11px;position:relative;z-index:2}
+.cbadge span{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff3d6,var(--acc) 62%,#b9871f);display:grid;place-items:center;font-size:15px;opacity:.45;filter:grayscale(.4)}
+.cfoot{margin-top:11px;text-align:center;font-family:var(--disp);font-weight:600;font-size:11px;color:var(--acc);position:relative;z-index:2;border-top:1px solid rgba(255,255,255,.18);padding-top:8px}
+.cardhint{font-size:12px;color:#c8bcbe;text-align:center;max-width:34ch;line-height:1.45}
+.done{margin-top:34px;text-align:center}
+.done .ct-btn{margin:0}
+
+/* ── Lesson 1: strengths & challenges ───────────────────────────── */
+.goals.l1 .l1btn{display:inline-block;margin:12px 0 2px}
+.l1row{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)}.l1row:first-of-type{border-top:none}
+.l1row b{font-family:var(--disp);font-size:12px;flex:none;width:96px;padding-top:3px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;border-radius:999px;padding:3px 10px;background:var(--paper);border:1px solid var(--line)}
+.chip.g{background:#e6f6ec;border-color:#bfe6cd}.chip.r{background:#fde8e8;border-color:#f3c2c2}.chip.none{color:var(--muted)}
+.l1acts{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
+.lnk{background:none;border:none;color:var(--maroon);font-weight:600;font-size:13px;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+.back.light{color:var(--ink-soft);border-color:var(--line);background:#fff}.back.light:hover{color:var(--ink)}
+.phero{margin:14px 0 4px}.phero .k,.sumhero .k{font-family:var(--disp);font-weight:700;letter-spacing:.18em;font-size:12px;color:var(--maroon)}
+.phero h1,.sumhero h1{font-family:var(--disp);font-weight:800;font-size:clamp(26px,4.5vw,40px);margin:4px 0 6px;line-height:1.05}
+.phero p,.sumhero p{color:var(--ink-soft);font-size:14px;max-width:60ch;margin:0 0 10px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);font-family:var(--disp);font-weight:600}.legend .sep{color:var(--muted)}
+.predict{padding-bottom:110px}
+.pitem{background:#fff;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;transition:.15s}
+.pitem.a-fit{border-left-color:var(--fit)}.pitem.a-fund{border-left-color:var(--fund)}
+.pitem.done{background:#fbfaf9}.pitem .tick{margin-left:auto;font-family:var(--disp);font-weight:700;color:var(--ap);opacity:0;transition:.15s}.pitem.done .tick{opacity:1}
+.pihead{display:flex;align-items:center;gap:10px;margin-bottom:9px}.pihead .em{font-size:22px}.pt{font-weight:600;font-size:14.5px}.ps{font-size:11.5px;color:var(--muted)}
+.tls{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.tl{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;font-family:var(--disp);font-weight:700;font-size:12.5px;cursor:pointer;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;gap:5px;min-height:40px}
+.tl span{font-size:15px}
+.tl.strength.on{background:#e6f6ec;border-color:#1f9d57;color:#0f7a41}.tl.neutral.on{background:#fff6dc;border-color:#e0a100;color:#7a5600}.tl.work-on.on{background:#fde8e8;border-color:#d64545;color:#8f1f1f}
+.tl:focus-visible,.fq:focus-visible{outline:2px solid var(--maroon);outline-offset:2px}
+.fqs{display:flex;gap:6px;flex-wrap:wrap}
+.fq{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer;color:var(--ink-soft)}
+.fq.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;gap:16px;z-index:40;box-shadow:0 -6px 20px rgba(0,0,0,.06)}
+.pbar .pcount{flex:1;font-family:var(--disp);font-weight:600;font-size:14px;color:var(--ink-soft)}.pbar .pcount b{font-size:20px;color:var(--ink)}
+.ptrack{height:6px;border-radius:3px;background:#ece7e6;margin-top:5px;max-width:320px}.ptrack i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,var(--fit),var(--fund));transition:width .2s}
+.pbar .ct-btn{margin:0}.pbar .ct-btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.sumhero{margin:20px 0 16px}
+.sumgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:640px){.sumgrid{grid-template-columns:1fr}}
+.sumcard{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;border-top:4px solid var(--line)}
+.sumcard.g{border-top-color:#1f9d57}.sumcard.r{border-top-color:#d64545}
+.sumcard h3{font-family:var(--disp);font-weight:700;font-size:17px;margin:0 0 8px}
+.slist{list-style:none;margin:0;padding:0}.slist li{display:flex;align-items:center;gap:9px;padding:7px 0;border-top:1px solid var(--line);font-size:13.5px}.slist li:first-child{border-top:none}
+.slist .em{font-size:18px}.slist .sf{margin-left:auto;font-size:11.5px;color:var(--muted)}
+.sumcard .empty{font-size:13px;color:var(--muted);margin:0}
+.sumnote{margin-top:14px;background:var(--maroon-t);border-left:3px solid var(--maroon);border-radius:0 12px 12px 0;padding:12px 16px;font-size:13px;color:var(--ink-soft)}.sumnote b{color:var(--maroon)}
+.sumacts{display:flex;gap:18px;align-items:center;margin-top:18px;flex-wrap:wrap}.sumacts .ct-btn{margin:0}
+.chead,.crowi{display:grid;grid-template-columns:28px 1fr 150px;gap:10px;align-items:center}
+.chead{font-family:var(--disp);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;padding:6px 14px;grid-template-columns:1fr 1fr 150px}
+.chead span:first-child{display:none}
+.crowi{background:#fff;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;padding:9px 14px;margin-bottom:6px}
+.crowi.a-fit{border-left-color:var(--fit)}.crowi.a-fund{border-left-color:var(--fund)}
+.crowi .em{font-size:18px}.crowi .ct b{display:block;font-size:13.5px}.crowi .ct span{font-size:12px;color:var(--ink-soft)}
+.crowi .cv{font-family:var(--disp);font-weight:700;text-align:right}.pending{font-size:11.5px;color:var(--muted);font-weight:500}
+@media(max-width:520px){.chead,.crowi{grid-template-columns:28px 1fr}.chead{grid-template-columns:1fr}.chead span:last-child{display:none}.crowi .cv{grid-column:2;text-align:left}}
+
+/* ── sign-in ─────────────────────────────────────────────────────── */
+.signin{max-width:440px;margin:12vh auto 0;background:#fff;border:1px solid var(--line);border-radius:22px;padding:30px 28px;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.08)}
+.signin .k{font-family:var(--disp);font-weight:700;letter-spacing:.22em;font-size:12px;color:var(--maroon)}
+.signin h1{font-family:var(--disp);font-weight:800;font-size:34px;margin:6px 0 8px;line-height:1}
+.signin p{color:var(--ink-soft);font-size:14.5px;margin:0 0 16px}
+.signin .note{background:var(--maroon-t);border-left:3px solid var(--maroon);border-radius:0 9px 9px 0;padding:9px 12px;font-size:13px;text-align:left}
+.gbtn{display:flex;justify-content:center;min-height:44px;margin:6px 0 14px}
+.signin .small{margin:0;font-size:11.5px}
+
+/* ── messages for non-student states ────────────────────────────── */
+.msg{max-width:520px;margin:60px auto;background:#fff;border:1px solid var(--line);border-radius:18px;padding:26px 28px;text-align:center}
+.msg .big{font-size:38px}
+.msg h2{font-family:var(--disp);font-weight:800;font-size:24px;margin:8px 0 6px}
+.msg p{color:var(--muted);font-size:14px;line-height:1.5;margin:0 0 8px}
+.msg code{background:var(--paper);padding:2px 7px;border-radius:6px;font-size:13px;color:var(--ink)}
+.msg .btn{display:inline-block;margin-top:10px;background:linear-gradient(145deg,#f3d689,#c9982f);color:#3a1008;border:none;font-family:var(--disp);font-weight:700;font-size:14px;padding:10px 20px;border-radius:11px;cursor:pointer;text-decoration:none}
+.small{font-size:11.5px;color:var(--muted);text-align:center;margin-top:30px;line-height:1.5}
 </style>
+
 </head>
 <body>
-<main>
-  <div class="k">GRADE 8 PE · FIS</div>
-  <h1>My PE Profile</h1>
-  <div id="go">
-    <div class="spin"></div>
-    <p>Opening your profile with your FIS Google account…</p>
-    <a class="btn" id="link" href="#">Open my profile ↗</a>
-  </div>
-  <div id="none" class="warn" hidden>This link isn’t connected to the app yet. Ask your PE teacher.</div>
-</main>
+<div id="app"><div class="loading"><div class="spinner"></div>Loading…</div></div>
+<div class="ov" id="ov"><div class="ovcard" id="ovcard"></div></div>
+<div class="toast" id="toast"></div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>window.PE_CONFIG = {"apiUrl":"https://script.google.com/a/macros/fis.edu/s/AKfycbxwkT1d2WDmDGEJp_BtJP1UDbvb0o8U4diTs-2OJKWvYaCdQs9rkzKBKjpZiFOx7E3R/exec","clientId":"701639243214-ud6m1qtmc6ma0pq6v24tk39afbuhcblv.apps.googleusercontent.com","domain":"fis.edu"};</script>
 <script>
-  var APP_URL = 'https://script.google.com/a/macros/fis.edu/s/AKfycbxwkT1d2WDmDGEJp_BtJP1UDbvb0o8U4diTs-2OJKWvYaCdQs9rkzKBKjpZiFOx7E3R/exec';
-  if (APP_URL) {
-    document.getElementById('link').href = APP_URL;
-    location.replace(APP_URL);
-  } else {
-    document.getElementById('go').hidden = true;
-    document.getElementById('none').hidden = false;
+// GENERATED by dev/build-rubrics.js from docs/G8_PE_Rubric_Bank.md — do not edit.
+window.RUBRICS = {
+ "ladders": {
+  "throw": {
+   "name": "Throw",
+   "levels": [
+    "Short throw to a partner, stationary — step and follow through",
+    "Accurate overarm to a target over distance",
+    "Throw on the move, or vary power and height",
+    "Accurate under pressure or off-balance; disguise the throw"
+   ]
+  },
+  "catch": {
+   "name": "Catch",
+   "levels": [
+    "Large ball, two hands, gentle throw, still",
+    "Smaller ball, two hands, on the move",
+    "One-handed, or while changing direction",
+    "Under pressure — rebound, at speed, or with a distraction"
+   ]
+  },
+  "strike": {
+   "name": "Strike",
+   "levels": [
+    "Strike a stationary ball with control",
+    "Strike a moving/tossed ball with accuracy",
+    "Strike with direction and power to a target",
+    "Under pressure — vary placement, beat an opponent"
+   ]
+  },
+  "dribble": {
+   "name": "Dribble",
+   "levels": [
+    "Control at walking pace, straight line",
+    "Jogging pace, change direction round cones",
+    "At speed, close control, both sides/hands",
+    "Under pressure — protect the ball, beat a defender, head up"
+   ]
+  },
+  "kick": {
+   "name": "Kick",
+   "levels": [
+    "Stationary ball to a partner, basic control",
+    "Accurate to a target over distance (instep)",
+    "Kick a moving ball; use both feet",
+    "Under pressure — pass/shoot on the move, vary power and placement"
+   ]
+  },
+  "balance": {
+   "name": "Balance",
+   "levels": [
+    "Hold a still balance, two/one foot, a few seconds",
+    "One foot eyes closed, or different shapes",
+    "Move into and out of balances with control",
+    "Under challenge — narrow base, added movement, on apparatus"
+   ]
+  },
+  "agility": {
+   "name": "Agility",
+   "levels": [
+    "Change direction at jogging pace with control",
+    "Change direction at speed through a course",
+    "React and change direction to a signal",
+    "Under pressure — dodge an opponent, unpredictable cue"
+   ]
+  },
+  "jump": {
+   "name": "Jump & land",
+   "levels": [
+    "Jump and land on two feet, balanced (absorb)",
+    "Jump for distance/height, land under control",
+    "One-foot take-off / landing, in combinations",
+    "Jump-land-link into the next move under control"
+   ]
+  },
+  "core": {
+   "name": "Core stability",
+   "levels": [
+    "Hold a plank with good form for a short time",
+    "Hold longer, or a side plank, form intact",
+    "Keep a stable core while a limb moves (bird-dog, dead-bug)",
+    "Keep core control under load or in dynamic movement"
+   ]
   }
+ }
+};
 </script>
+
+<script>
+(function () {
+'use strict';
+
+// ═══════════════ utils ═══════════════
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const $ = (sel, root) => (root || document).querySelector(sel);
+function toast(msg, err) { const t = $('#toast'); t.textContent = msg; t.className = 'toast show' + (err ? ' err' : ''); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
+
+// ═══════════════ sign-in + API bridge ═══════════════
+// The page keeps the Google ID token for the tab session only and sends it with
+// every request. The server verifies it with Google and answers for that
+// student alone. Nothing else identifies the caller.
+const CFG = window.PE_CONFIG || {};
+const TOKEN_KEY = 'pe_token';
+let token = null;
+function tokenExpired(t) {
+  try { const p = JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); return !p.exp || p.exp * 1000 < Date.now() + 30000; }
+  catch (e) { return true; }
+}
+function loadToken() { try { const t = sessionStorage.getItem(TOKEN_KEY); if (t && !tokenExpired(t)) return t; } catch (e) {} return null; }
+function keepToken(t) { token = t; try { sessionStorage.setItem(TOKEN_KEY, t); } catch (e) {} }
+function dropToken() { token = null; try { sessionStorage.removeItem(TOKEN_KEY); } catch (e) {} }
+
+async function rawCall(action, payload) {
+  if (!CFG.apiUrl) throw new Error('This page is not connected to the data service yet');
+  const r = await fetch(CFG.apiUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ action, token }, payload || {})) });
+  const j = await r.json();
+  if (!j || !j.ok) { const e = new Error((j && j.error) || 'Request failed'); e.authRequired = !!(j && j.authRequired); throw e; }
+  return j.data;
+}
+// Apps Script caps simultaneous runs; a whole class tapping at once produces
+// transient errors. Retry those with backoff; permanent ones surface at once.
+const PERMANENT = /Unknown style|Unknown action|Incomplete|class list|not connected|Bad request/i;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function call(action, payload) {
+  let delay = (window.__preview && window.__preview.fastRetry) ? 30 : 1200;
+  for (let attempt = 0; ; attempt++) {
+    try { return await rawCall(action, payload); }
+    catch (e) {
+      if (e.authRequired) { dropToken(); showSignin('Your sign-in expired. Please sign in again.'); throw e; }
+      if (PERMANENT.test(e.message) || attempt >= 4) throw e;
+      await sleep(delay + Math.random() * delay); delay = Math.min(delay * 2, 15000);
+    }
+  }
+}
+
+// ── Sign in with Google (Google Identity Services) ──
+function signinView(msg) {
+  return '<div class="signin"><div class="k">GRADE 8 PE · FIS</div><h1>My PE Profile</h1>' +
+    '<p>Sign in with your <b>FIS Google account</b> to open your profile.</p>' +
+    (msg ? '<p class="note">' + esc(msg) + '</p>' : '') +
+    '<div class="gbtn" id="gbtn"><div class="spinner"></div></div>' +
+    '<p class="small">Only FIS accounts work here. Your name and photo come from your Google account while you’re signed in and are never stored by this page.</p></div>';
+}
+function gisReady(cb) {
+  if (window.google && google.accounts && google.accounts.id) return cb();
+  let n = 0;
+  const t = setInterval(() => {
+    if (window.google && google.accounts && google.accounts.id) { clearInterval(t); cb(); }
+    else if (++n > 100) { clearInterval(t); const el = $('#gbtn'); if (el) el.innerHTML = '<p class="note">Couldn’t load Google sign-in. Check the connection and reload.</p>'; }
+  }, 100);
+}
+let gisInit = false;
+function showSignin(msg) {
+  document.body.classList.remove('dark');
+  $('#app').innerHTML = signinView(msg);
+  gisReady(() => {
+    if (!gisInit) { google.accounts.id.initialize({ client_id: CFG.clientId, callback: onCredential, hd: CFG.domain, auto_select: true, itp_support: true, use_fedcm_for_prompt: true }); gisInit = true; }
+    const el = $('#gbtn'); if (!el) return; el.innerHTML = '';
+    google.accounts.id.renderButton(el, { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', width: 280 });
+    try { google.accounts.id.prompt(); } catch (e) { /* One Tap is optional */ }
+  });
+}
+function onCredential(resp) { if (resp && resp.credential) { keepToken(resp.credential); boot(); } }
+function signOut() { dropToken(); try { google.accounts.id.disableAutoSelect(); } catch (e) {} showSignin(); }
+
+// ═══════════════ PE Styles (visual skins; the server holds the names) ═══════════════
+const SKINS = {
+  competitor: { e: '🏆', d: 'I love to compete and give everything.',          ink: ['#8f2130', '#7a1b28', '#4d0f18'], acc: '#f0c24a', accs: '#ffe08a', rib: '#3a1008' },
+  team:       { e: '🤝', d: 'I’m at my best lifting the team up.',         ink: ['#12726a', '#0e615a', '#063d38'], acc: '#8fe0c8', accs: '#c9f5e8', rib: '#053d36' },
+  improver:   { e: '📈', d: 'I’m all about getting better than I was.',    ink: ['#b5560e', '#9c4a0c', '#5e2c06'], acc: '#f3c07a', accs: '#ffe0b8', rib: '#4a2200' },
+  explorer:   { e: '🧭', d: 'I love trying new activities and challenges.',    ink: ['#22508c', '#1d4577', '#0f2747'], acc: '#8fbff0', accs: '#cfe4fb', rib: '#0c2747' },
+  energizer:  { e: '⚡', d: 'I bring energy and fun to every session.',        ink: ['#a3236b', '#8c1d5b', '#520f36'], acc: '#f7b0d8', accs: '#ffd6ec', rib: '#4a0f30' },
+  thinker:    { e: '🧠', d: 'I understand the why and think tactically.',      ink: ['#5a3b9c', '#4d3288', '#2c1c52'], acc: '#c3a6f0', accs: '#e2d3fb', rib: '#241452' }
+};
+const ORDER = ['competitor', 'team', 'improver', 'explorer', 'energizer', 'thinker'];
+const DEFAULT_SKIN = { e: '✨', ink: ['#7d2233', '#6f1d2c', '#4a1019'], acc: '#e7b64b', accs: '#f3d689', rib: '#3a1008' };
+function hexA(h, a) { h = h.replace('#', ''); return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')'; }
+function setSkin(k) {
+  const s = SKINS[k] || DEFAULT_SKIN, r = document.documentElement.style;
+  r.setProperty('--ink1', s.ink[0]); r.setProperty('--ink2', s.ink[1]); r.setProperty('--ink3', s.ink[2]);
+  r.setProperty('--acc', s.acc); r.setProperty('--accs', s.accs); r.setProperty('--rib', s.rib);
+}
+
+// ═══════════════ radar (placeholder shape until Combine data exists — v3) ═══════════════
+const AX = ['STAMINA', 'STRENGTH', 'SPEED', 'SKILLS', 'TEAM', 'EFFORT'], PLACE = [.62, .55, .6, .55, .7, .72];
+const cx = 150, cy = 90, R = 60;
+function pt(i, v) { const a = (-90 + i * 60) * Math.PI / 180; return [cx + R * v * Math.cos(a), cy + R * v * Math.sin(a)]; }
+function radar(skin) {
+  let g = '';
+  for (let r = 1; r <= 4; r++) { const p = []; for (let i = 0; i < 6; i++) p.push(pt(i, r / 4).join(',')); g += '<polygon points="' + p.join(' ') + '" fill="none" stroke="rgba(255,255,255,.14)"/>'; }
+  for (let i = 0; i < 6; i++) { const [x, y] = pt(i, 1.3); const an = Math.abs(x - cx) < 5 ? 'middle' : (x > cx ? 'start' : 'end'); g += '<text x="' + x.toFixed(1) + '" y="' + (y + 3).toFixed(1) + '" text-anchor="' + an + '" class="rlabel">' + AX[i] + '</text>'; }
+  g += '<polygon points="' + PLACE.map((v, i) => pt(i, v).map(n => n.toFixed(1)).join(',')).join(' ') + '" fill="' + hexA(skin.acc, .3) + '" stroke="' + skin.accs + '" stroke-width="2.2"/>';
+  g += '<text x="150" y="187" text-anchor="middle" class="rnote">your shape fills in at the Combine</text>';
+  return '<svg viewBox="0 0 300 190" width="100%" height="160" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six-sided fitness and skills chart, placeholder until the Combine">' + g + '</svg>';
+}
+
+// ═══════════════ profile content (v1: everything is "coming"; data arrives in v2–v4) ═══════════════
+const FUND = [['throw', '🎯'], ['catch', '🧤'], ['strike', '🏏'], ['dribble', '⛹️'], ['kick', '⚽'], ['balance', '🤸'], ['agility', '🏃'], ['jump', '⬆️'], ['core', '🧱']];
+const D = {
+  'gl-fit':   { e: '🏃', t: 'Fitness', m: 'Combine trend', what: 'Five measures of your physical capacities: the mile, push-ups, sit-to-stand, broad jump and the 40 m sprint.', when: 'Your first numbers come from the September Combine. Then you chase your own records in January and May.' },
+  'gl-fund':  { e: '🧩', t: 'Fundamental skills', m: 'Nine building blocks, on the Combine ladder', what: 'Throw, catch, strike, dribble, kick, balance, agility, jump & land, core stability. Each is a 4-level ladder: stationary → on the move → isolated challenge → under pressure.', when: 'Tested identically every Combine, so your level is a trend. Cleared self → peer → teacher.' },
+  'gl-ap':    { e: '🤝', t: 'Participation', m: 'Your biggest all-year story', what: 'How you show up: five keys, tracked through every unit.', when: 'You rate yourself at the start and end of the year; your teacher checks in each unit.' },
+  'gl-know':  { e: '🧠', t: 'Understanding', m: 'Using what you know in new games', what: 'Knowing the why: fitness concepts, safe practice, and taking a tactic from one game into another.', when: 'Grows through Fitness, Parkour and especially the Tactics Cup.' },
+  'fit-cv':   { e: '🫀', t: 'Cardiovascular endurance', m: 'The mile run · Sept → Jan → May', what: 'Heart and lung staying power. The one everybody can move.', when: 'First mile at the September Combine.' },
+  'fit-me':   { e: '💪', t: 'Muscular endurance', m: 'Push-ups (upper) & sit-to-stand (lower)', what: 'How many quality reps in 60 seconds. Sit-ups are retired; core stability is its own skill ladder.', when: 'September Combine.' },
+  'fit-pw':   { e: '💥', t: 'Power', m: 'Standing broad jump', what: 'Explosive strength, measured in centimetres.', when: 'September Combine.' },
+  'fit-sp':   { e: '⚡', t: 'Speed', m: '40 m sprint', what: 'Acceleration and top speed, measured in seconds.', when: 'September Combine.' },
+  'sk-net':   { e: '🏸', t: 'Net & wall', m: 'Badminton · Volleyball', what: 'Serve with purpose, sustain and vary a rally, read play and position early.', when: 'Assessed inside the Badminton unit.' },
+  'sk-inv':   { e: '🏀', t: 'Invasion games', m: 'Basketball · Football · Tchoukball', what: 'Pass, support, find space, and contribute to the team.', when: 'Assessed inside Tchoukball and the Tactics Cup.' },
+  'sk-str':   { e: '⚾', t: 'Striking & target', m: 'Accuracy & contact', what: 'Solid contact, reliable throw and catch, accuracy at a target.', when: 'Assessed inside the striking unit.' },
+  'ap-ready': { e: '✅', t: 'Be ready', m: 'Kit on, on time, set to learn', what: 'Prepared with full kit, on time, ready to start without reminders.', when: 'Every lesson, all year.' },
+  'ap-effort':{ e: '🔥', t: 'Best effort', m: 'Give it my all', what: 'Full effort and engagement the whole lesson, including in activities you don’t naturally enjoy.', when: 'Every lesson, all year.' },
+  'ap-growth':{ e: '🌱', t: 'Growth mindset', m: 'Keep trying; learn from setbacks', what: 'Embrace challenges, try new things, stay positive after setbacks.', when: 'Every lesson, all year.' },
+  'ap-team':  { e: '🙌', t: 'Great teammate', m: 'Include, encourage, communicate', what: 'Communicate positively, encourage others, help teammates take part.', when: 'Every lesson, all year.' },
+  'ap-manage':{ e: '🧘', t: 'Manage myself & my feelings', m: 'Listen · safe environment · take responsibility', what: 'Manage behaviour and emotions positively without reminders.', when: 'Every lesson, all year.' },
+  'rp-know':  { e: '🧠', t: 'Knowledge', m: 'Understanding fitness, health & safety', what: 'Best fit across: fitness concepts (K4), safe practice (K5), health.', when: 'Reported on Canvas, 1–7.' },
+  'rp-skill': { e: '🎯', t: 'Skills', m: 'Performing movements & using them in games', what: 'Best fit across: fundamental skills (S1), game skills (S1/S3), planning (S2), team contribution (S4).', when: 'Reported on Canvas, 1–7.' },
+  'rp-ct':    { e: '🔄', t: 'Concept transfer', m: 'Using what you know in new sports & situations', what: 'Best fit across: Tactics Cup transfer (C2), meaningful participation (C1), health decisions (C3).', when: 'Reported on Canvas, 1–7.' }
+};
+
+// ═══════════════ Combine Intro: strengths & challenges self-prediction ═══════════════
+const ITEMS = [
+  { k: 'cv',      g: 'fit',  e: '🫀', t: 'Cardiovascular endurance', s: 'Your engine. Keeps you going when everyone else is gassed. · Mile run' },
+  { k: 'me',      g: 'fit',  e: '💪', t: 'Muscular endurance',       s: 'Muscles that don’t quit. The 20th rep as good as the 1st. · Push-ups · Sit-to-stand' },
+  { k: 'power',   g: 'fit',  e: '💥', t: 'Power',                    s: 'Explosive. Jump higher, launch off the line. · Broad jump' },
+  { k: 'speed',   g: 'fit',  e: '⚡', t: 'Speed',                    s: 'Pure quick. First to the ball. · 40m sprint' },
+  { k: 'throw',   g: 'fund', e: '🎯', t: 'Throw',                    s: 'aim, distance, on the move' },
+  { k: 'catch',   g: 'fund', e: '🧤', t: 'Catch',                    s: 'safe hands, under pressure' },
+  { k: 'strike',  g: 'fund', e: '🏏', t: 'Strike',                   s: 'bat, racket, hand' },
+  { k: 'dribble', g: 'fund', e: '⛹️', t: 'Dribble',                  s: 'hands or feet, head up' },
+  { k: 'kick',    g: 'fund', e: '⚽', t: 'Kick',                     s: 'accuracy, both feet' },
+  { k: 'balance', g: 'fund', e: '🤸', t: 'Balance',                  s: 'still and moving' },
+  { k: 'agility', g: 'fund', e: '🏃', t: 'Agility',                  s: 'change direction fast' },
+  { k: 'jump',    g: 'fund', e: '⬆️', t: 'Jump & land',              s: 'take off, land in control' },
+  { k: 'core',    g: 'fund', e: '🧱', t: 'Core stability',           s: 'plank, hold your shape' }
+];
+const RATING = { strength: { e: '🟢', t: 'Strength' }, neutral: { e: '🟡', t: 'Neutral' }, 'work-on': { e: '🔴', t: 'Work-on' } };
+const FREQ = { often: 'Often', sometimes: 'Sometimes', rarely: 'Rarely' };
+const CP = 'intro';
+let draft = {}; // { cv: { rating, freq }, ... } while rating
+function predictionSaved() { return (state.student.predictions || {})[CP] || null; }
+function draftDone() { return ITEMS.filter(i => draft[i.k] && draft[i.k].rating && draft[i.k].freq).length; }
+function lists(pred) {
+  const by = r => ITEMS.filter(i => pred.items[i.k] && pred.items[i.k].rating === r);
+  return { strengths: by('strength'), neutral: by('neutral'), workons: by('work-on') };
+}
+
+// ═══════════════ views ═══════════════
+let state = null, view = 'profile';
+
+function avatar(st, cls) {
+  const ini = esc(st.initials || '?');
+  if (st.photoUrl) return '<span class="' + cls + '"><img src="' + esc(st.photoUrl) + '" alt="" referrerpolicy="no-referrer" onerror="this.parentNode.textContent=\'' + ini + '\'"></span>';
+  return '<span class="' + cls + '">' + ini + '</span>';
+}
+function track(cls, n) { let s = ''; for (let i = 0; i < n; i++) s += '<i></i>'; return '<div class="track">' + s + '</div>'; }
+function tile(cls, key, em, name, sub, lab) {
+  return '<button type="button" class="tile ' + cls + '" data-ov="' + key + '"><span class="plus">⊕</span><div class="tnrow"><span class="em">' + em + '</span><span class="tn">' + esc(name) + '</span></div><div class="tsub">' + esc(sub) + '</div>' + track(cls, 4) + '<div class="tracklab">' + esc(lab) + '</div></button>';
+}
+function mtile(key, em, name, sub, unit) {
+  return '<button type="button" class="tile a-fit" data-ov="' + key + '"><span class="plus">⊕</span><div class="tnrow"><span class="em">' + em + '</span><span class="tn">' + esc(name) + '</span></div><div class="tsub">' + esc(sub) + '</div><div class="measure">—<small>' + esc(unit) + '</small></div></button>';
+}
+function band(key, em, name) {
+  return '<button type="button" class="band" data-ov="' + key + '"><span class="plus">⊕</span><div class="bn">' + em + ' ' + esc(name) + '</div><div class="btrack"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="blab">not yet reported</div></button>';
+}
+
+function profileView(b) {
+  const st = b.student, styles = b.styles, k = st.style, skin = SKINS[k];
+  const fund = FUND.map(([key, em]) => '<button type="button" class="tile a-fund" data-ov="fund-' + key + '"><span class="plus">⊕</span><div class="tnrow"><span class="em">' + em + '</span><span class="tn">' + esc(RUBRICS.ladders[key].name) + '</span></div><div class="tsub">building block</div>' + track('a-fund', 4) + '<div class="rung">Level — of 4 · first Combine</div></button>').join('');
+  return '<div class="wrap">' +
+    '<div class="topline"><span class="demo-tag">Hi ' + esc(st.first) + ' · your profile fills in through the year · tap any tile</span><span class="yearlab">GRADE 8 PE · ' + esc(b.config.yearLabel) + '</span></div>' +
+    '<div class="cardteaser">' + avatar(st, 'ct-av') +
+      '<div class="ct-id"><div class="ct-name">' + esc(st.name) + ' <span class="ct-tier">◆ BRONZE</span></div>' + (st.klass ? '<div class="ct-sub">' + esc(st.klass) + '</div>' : '') +
+      '<div class="ct-arch">' + (skin ? skin.e + ' ' + esc(styles[k]).toUpperCase() : '✨ PICK YOUR PE STYLE') + '</div></div>' +
+      '<div class="ct-stats"><div><b>—</b><span>Mile</span></div><div><b>—</b><span>Skills</span></div><div><b>—</b><span>Effort</span></div></div>' +
+      '<button type="button" class="ct-btn' + (k ? '' : ' pulse') + '" id="tocard">' + (k ? 'View my card ↗' : 'Build my card ↗') + '</button>' +
+    '</div>' +
+    lesson1Panel() +
+    '<h3 class="sec sec-glance"><span class="em">👀</span> At a glance <span class="tap">· tap to open</span></h3><p class="seclede">The whole picture in one look — position, not scores.</p>' +
+    '<div class="grid4">' + tile('a-fit', 'gl-fit', '🏃', 'Fitness', 'from September', 'at the Combine') + tile('a-fund', 'gl-fund', '🧩', 'Fundamental skills', '9 building blocks', 'Level 1 to 4') + tile('a-ap', 'gl-ap', '🤝', 'Participation', 'all year', 'your five keys') + tile('a-skill', 'gl-know', '🧠', 'Understanding', 'use it in new games', 'Tactics Cup') + '</div>' +
+    '<h3 class="sec sec-fit"><span class="em">🏃</span> My fitness <span class="tap">· tap a part</span></h3><p class="seclede">Physical capacities — measured three times a year. Records that move.</p>' +
+    '<button type="button" class="fhero" data-ov="fit-cv"><div class="fx">🫀</div><div class="fm"><div class="n">Cardiovascular endurance</div><div class="s">Heart &amp; lung staying power · the mile run</div></div><div class="fv">—<span>September Combine</span></div></button>' +
+    '<div class="grid3">' + mtile('fit-me', '💪', 'Muscular endurance', 'push-ups · sit-to-stand', '') + mtile('fit-pw', '💥', 'Power', 'broad jump', 'cm') + mtile('fit-sp', '⚡', 'Speed', '40m sprint', 's') + '</div>' +
+    '<h3 class="sec sec-fund"><span class="em">🧩</span> Fundamental skills <span class="tap">· self → peer → teacher · tap a skill</span></h3><p class="seclede">Nine building blocks, each a 4-level ladder. Same test every Combine, so your level climbs over the year.</p>' +
+    '<div class="grid3">' + fund + '</div>' +
+    '<h3 class="sec sec-skill"><span class="em">🎯</span> Game skills <span class="tap">· in real games</span></h3><p class="seclede">The fundamentals, applied in a game. Assessed inside the units.</p>' +
+    '<div class="grid3">' + tile('a-skill', 'sk-net', '🏸', 'Net & wall', 'badminton · volleyball', 'coming') + tile('a-skill', 'sk-inv', '🏀', 'Invasion', 'basketball · football', 'coming') + tile('a-skill', 'sk-str', '⚾', 'Striking & target', 'accuracy & contact', 'coming') + '</div>' +
+    '<h3 class="sec sec-ap"><span class="em">🤝</span> Active participation <span class="tap">· all year</span></h3><p class="seclede">Your biggest all-year story — how you show up, tracked through every unit.</p>' +
+    '<div class="grid3">' + tile('a-ap', 'ap-ready', '✅', 'Be ready', 'set to learn', 'all year') + tile('a-ap', 'ap-effort', '🔥', 'Best effort', 'give it my all', 'all year') + tile('a-ap', 'ap-growth', '🌱', 'Growth mindset', 'learn from setbacks', 'all year') + tile('a-ap', 'ap-team', '🙌', 'Great teammate', 'include & encourage', 'all year') + tile('a-ap', 'ap-manage', '🧘', 'Manage myself & feelings', 'listen · safe space', 'all year') + '</div>' +
+    '<h3 class="sec sec-rep"><span class="em">🧠</span> My report picture <span class="tap">· tap for how it’s built</span></h3><p class="seclede">The three grades on your Canvas report — a best fit across the descriptors.</p>' +
+    '<div class="grid3">' + band('rp-know', '🧠', 'Knowledge') + band('rp-skill', '🎯', 'Skills') + band('rp-ct', '🔄', 'Concept transfer') + '</div>' +
+    '<div class="foot"><span class="arrow">↻</span><div><b>How this grows:</b> September sets the baseline; the same measures repeat in January and May. Always <b>you vs. your past self</b> — and it maps straight to your report.</div></div>' +
+    (b.alsoTeacher ? '<p class="small">You are on the Teachers tab too, so this is what a student sees.</p>' : '') +
+  '</div>';
+}
+
+function lesson1Panel() {
+  const pred = predictionSaved();
+  if (!pred) {
+    return '<div class="goals l1"><div class="hd">🔮 Lesson 1 · Predict yourself</div><div class="empty">Before we test anything, what do YOU think? Predict your own strengths &amp; work-ons. We’ll check it against your real results later.</div>' +
+      '<button type="button" class="ct-btn pulse l1btn" id="topredict">Predict yourself ↗</button></div>';
+  }
+  const L = lists(pred);
+  const chips = (arr, cls) => arr.length ? arr.map(i => '<span class="chip ' + cls + '">' + i.e + ' ' + esc(i.t) + '</span>').join('') : '<span class="chip none">none picked</span>';
+  return '<div class="goals l1"><div class="hd">🔮 My prediction <span class="tap">· Lesson 1 · ' + esc(pred.timestamp.slice(0, 10)) + '</span></div>' +
+    '<div class="l1row"><b>🟢 Strengths</b><div class="chips">' + chips(L.strengths, 'g') + '</div></div>' +
+    '<div class="l1row"><b>🔴 Work-ons</b><div class="chips">' + chips(L.workons, 'r') + '</div></div>' +
+    '<div class="l1acts"><button type="button" class="lnk" id="topredict">Edit my prediction</button><button type="button" class="lnk" id="tocompare">Compare with my Combine results ›</button></div></div>';
+}
+
+function predictView(b) {
+  const st = b.student;
+  const row = i => {
+    const d = draft[i.k] || {};
+    const tl = Object.keys(RATING).map(r => '<button type="button" class="tl ' + r + (d.rating === r ? ' on' : '') + '" data-k="' + i.k + '" data-rating="' + r + '" aria-pressed="' + (d.rating === r) + '"><span>' + RATING[r].e + '</span>' + RATING[r].t + '</button>').join('');
+    const fq = Object.keys(FREQ).map(f => '<button type="button" class="fq' + (d.freq === f ? ' on' : '') + '" data-k="' + i.k + '" data-freq="' + f + '" aria-pressed="' + (d.freq === f) + '">' + FREQ[f] + '</button>').join('');
+    return '<div class="pitem a-' + i.g + (d.rating && d.freq ? ' done' : '') + '" id="pi-' + i.k + '"><div class="pihead"><span class="em">' + i.e + '</span><div><div class="pt">' + esc(i.t) + '</div><div class="ps">' + esc(i.s) + '</div></div><span class="tick">✓</span></div>' +
+      '<div class="tls">' + tl + '</div><div class="fqs">' + fq + '</div></div>';
+  };
+  const group = (g, em, title, lede) => '<h3 class="sec sec-' + g + '"><span class="em">' + em + '</span> ' + title + '</h3><p class="seclede">' + lede + '</p>' + ITEMS.filter(i => i.g === g).map(row).join('');
+  return '<div class="wrap predict">' +
+    '<button type="button" class="back light" id="toprofile">← Back to my profile</button>' +
+    '<div class="phero"><div class="k">LESSON 1 · YOUR TURN</div><h1>Predict yourself</h1><p>Before we test anything, what do YOU think, ' + esc(st.first) + '? We’ll check it against your real results later. It’s you vs. your past self, not a competition with anyone else.</p>' +
+    '<div class="legend"><span>1 · Is it a strength, neutral, or a work-on?</span><span class="sep">·</span><span>2 · How often do you do it?</span></div></div>' +
+    group('fit', '🏃', 'Part 1 · The parts of fitness', 'Your engine, your muscles, your explosiveness, your speed. Four parts the Combine measures.') +
+    group('fund', '🧩', 'Part 2 · 9 fundamental skills', 'The movement building blocks every sport is built on. You’ll level these up all year.') +
+    '<div class="pbar"><div class="pcount"><b id="pdone">' + draftDone() + '</b> of ' + ITEMS.length + '<div class="ptrack"><i id="pfill" style="width:' + Math.round(100 * draftDone() / ITEMS.length) + '%"></i></div></div>' +
+      '<button type="button" class="ct-btn" id="psave"' + (draftDone() === ITEMS.length ? '' : ' disabled') + '>' + (predictionSaved() ? 'Save changes' : 'Save my prediction') + '</button></div>' +
+  '</div>';
+}
+
+function summaryView(b) {
+  const pred = predictionSaved(), L = lists(pred);
+  const list = (arr, empty) => arr.length ? '<ul class="slist">' + arr.map(i => '<li><span class="em">' + i.e + '</span><b>' + esc(i.t) + '</b><span class="sf">' + esc(FREQ[pred.items[i.k].freq]).toLowerCase() + '</span></li>').join('') + '</ul>' : '<p class="empty">' + empty + '</p>';
+  return '<div class="wrap">' +
+    '<div class="sumhero"><div class="k">LESSON 1 · SAVED ✓</div><h1>Here’s your shape, ' + esc(b.student.first) + '</h1><p>' + L.strengths.length + ' strengths · ' + L.neutral.length + ' neutral · ' + L.workons.length + ' work-ons. Everyone’s shape is different: strong in some parts, growing in others. That’s normal. We’ll check this against your real Combine results, and the interesting part is where you surprise yourself.</p></div>' +
+    '<div class="sumgrid"><div class="sumcard g"><h3>🟢 My predicted strengths</h3>' + list(L.strengths, 'You didn’t pick any strengths yet. The Combine might find some for you.') + '</div>' +
+    '<div class="sumcard r"><h3>🔴 My work-ons</h3>' + list(L.workons, 'No challenges picked. Bold. The Combine will have a say.') + '</div></div>' +
+    '<div class="sumnote">↻ <b>What happens next:</b> the Combine. Same checks in September, January and May, so you can watch yourself get better. Your profile lines this prediction up against your numbers.</div>' +
+    '<div class="sumacts"><button type="button" class="ct-btn" id="toprofile">Back to my profile ↗</button><button type="button" class="lnk" id="topredict">Edit my prediction</button></div>' +
+  '</div>';
+}
+
+// v3 stub: prediction next to Combine measurements. Combine data is null until the
+// Combine tab exists; the layout is final so v3 only has to fill the right column.
+function compareView(b) {
+  const pred = predictionSaved(), combine = b.student.combine || {};
+  const rows = ITEMS.map(i => {
+    const p = pred && pred.items[i.k], c = combine[i.k];
+    return '<div class="crowi a-' + i.g + '"><span class="em">' + i.e + '</span><div class="ct"><b>' + esc(i.t) + '</b><span>' + (p ? RATING[p.rating].e + ' ' + RATING[p.rating].t + ' · ' + esc(FREQ[p.freq]).toLowerCase() : 'no prediction') + '</span></div>' +
+      '<div class="cv">' + (c ? esc(String(c)) : '<span class="pending">not yet measured</span>') + '</div></div>';
+  }).join('');
+  return '<div class="wrap">' +
+    '<button type="button" class="back light" id="toprofile">← Back to my profile</button>' +
+    '<div class="phero"><div class="k">PREDICTION vs. COMBINE</div><h1>How well did you know yourself?</h1><p>Left: what you predicted in Lesson 1. Right: what the Combine measured. Right now the Combine hasn’t happened, so the right side is waiting.</p></div>' +
+    '<div class="chead"><span>Item</span><span>My prediction</span><span>Combine</span></div>' + rows +
+    (pred ? '' : '<p class="empty" style="margin-top:14px">You haven’t made a prediction yet. <button type="button" class="lnk" id="topredict">Make it now</button></p>') +
+  '</div>';
+}
+
+function cardView(b) {
+  const st = b.student, styles = b.styles, chosen = st.style;
+  const pick = ORDER.filter(k => styles[k]).map(k => {
+    const s = SKINS[k];
+    return '<button type="button" class="sbtn' + (k === chosen ? ' sel' : '') + '" data-k="' + k + '" aria-pressed="' + (k === chosen) + '"><span class="se">' + s.e + '</span><div class="sn">' + esc(styles[k]) + '</div><div class="sd">' + esc(s.d) + '</div></button>';
+  }).join('');
+  return '<div class="wrap">' +
+    '<button type="button" class="back" id="toprofile">← Back to my profile</button>' +
+    '<div class="hero"><div class="k">GRADE 8 PE · ' + esc(b.config.yearLabel) + '</div><h1>Hi ' + esc(st.first) + ', build your Athlete Card</h1><p>Choose your PE Style and make it yours. Your card grows all year.</p></div>' +
+    '<div class="grid">' +
+      '<div><div class="step">1 · Choose your style <span class="saved" id="saved">' + (chosen ? '✓ saved' : '') + '</span></div><div class="styles" id="styles">' + pick + '</div></div>' +
+      '<div class="cardstage"><div class="card" id="card"><div class="cinner">' +
+        '<div class="chd"><span>FIS · PE ATHLETE · ' + esc(b.config.yearLabel) + '</span><span class="ctier">BRONZE</span></div>' +
+        '<div class="cwho">' + avatar(st, 'cav') + '<div><div class="cname">' + esc(st.name) + '</div>' + (st.klass ? '<div class="cclass">' + esc(st.klass) + '</div>' : '') + '</div></div>' +
+        '<div class="crib"><span id="archt">' + (chosen ? esc(styles[chosen]).toUpperCase() : 'PICK A STYLE') + '</span><span id="arche">' + (chosen ? SKINS[chosen].e : '✨') + '</span></div>' +
+        '<div class="crad" id="rad">' + radar(SKINS[chosen] || DEFAULT_SKIN) + '</div>' +
+        '<div class="cstat"><div><b>—</b><span>Mile</span></div><div><b>—</b><span>Skills</span></div><div><b>—</b><span>Effort</span></div></div>' +
+        '<div class="cbadge" aria-label="Badges you can earn"><span>🏃</span><span>📈</span><span>🔥</span><span>⭐</span></div>' +
+        '<div class="cfoot">◆ Your card levels up as you grow ◆</div>' +
+      '</div></div><div class="cardhint">Your style is your choice. None is "better": it sets your card’s colour and identity.</div></div>' +
+    '</div>' +
+    '<div class="done"><button type="button" class="ct-btn" id="toprofile2">Done · back to my profile ↗</button></div>' +
+  '</div>';
+}
+
+function message(big, title, body, extra) {
+  return '<div class="msg"><div class="big">' + big + '</div><h2>' + esc(title) + '</h2><p>' + body + '</p>' + (extra || '') + '</div>';
+}
+function otherView(b) {
+  const out = '<p class="small"><button type="button" class="lnk" id="signout">Not you? Sign out and use another account</button></p>';
+  return otherView_(b) + out;
+}
+function otherView_(b) {
+  switch (b.role) {
+    case 'teacher':
+      return message('🧑‍🏫', 'Teacher view', 'You’re signed in as <code>' + esc(b.email) + '</code>, which is on the Teachers tab but not the Students tab. Students who open this link see their own profile.',
+        '<p>To see the student view yourself, add your address to the Students tab. Student data lives only in the Sheet.</p>');
+    case 'unknown':
+      return message('🔎', 'Not on the Grade 8 list yet', 'You’re signed in as <code>' + esc(b.email) + '</code>. That account isn’t on the Grade 8 PE class list.',
+        '<p>Tell your PE teacher, or check you opened the link with your FIS account.</p>');
+    case 'wrong_domain':
+      return message('🔒', 'Use your FIS account', 'This page only works with an FIS Google account.',
+        '<p>Sign out and sign in again with your FIS account.</p>');
+    default:
+      return message('🙈', 'Couldn’t confirm who you are', 'Google didn’t confirm which account is signed in.',
+        '<p>Sign out and try again. If it keeps happening, tell your PE teacher.</p>');
+  }
+}
+
+// ═══════════════ overlay ═══════════════
+function openOv(k) {
+  let html = '<button class="x" type="button" data-close="1">✕</button>';
+  if (k.startsWith('fund-')) {
+    const key = k.slice(5), lad = RUBRICS.ladders[key], em = (FUND.find(f => f[0] === key) || ['', '🧩'])[1];
+    html += '<h4>' + em + ' ' + esc(lad.name) + '</h4><div class="om">Fundamental skill · 4-level ladder · cleared self → peer → teacher</div>';
+    lad.levels.forEach((t, i) => { html += '<div class="lad"><span class="lv">L' + (i + 1) + '</span><span>' + esc(t) + '</span></div>'; });
+    html += '<div class="ovfeeds"><b>Not yet tested.</b> Your first level comes from the September Combine, then Jan → May.</div>';
+  } else {
+    const d = D[k]; if (!d) return;
+    html += '<h4>' + d.e + ' ' + esc(d.t) + '</h4><div class="om">' + esc(d.m) + '</div>' +
+      '<div class="ovnow"><div class="l">WHAT THIS IS</div><div class="t">' + esc(d.what) + '</div></div>' +
+      '<div class="ovnext"><div class="l">↗ WHEN IT FILLS IN</div><div class="t">' + esc(d.when) + '</div></div>';
+  }
+  $('#ovcard').innerHTML = html; $('#ov').classList.add('show');
+}
+function closeOv() { $('#ov').classList.remove('show'); }
+
+// ═══════════════ interactions ═══════════════
+function applySkin(k) {
+  const s = SKINS[k]; if (!s) return;
+  setSkin(k);
+  $('#archt').textContent = state.styles[k].toUpperCase(); $('#arche').textContent = s.e;
+  $('#rad').innerHTML = radar(s);
+  document.querySelectorAll('.sbtn').forEach(b => { const on = b.dataset.k === k; b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
+}
+async function choose(k) {
+  if (!SKINS[k] || k === state.student.style) { applySkin(k); return; }
+  const prev = state.student.style;
+  applySkin(k);
+  const saved = $('#saved'); saved.textContent = 'saving…';
+  document.querySelectorAll('.sbtn').forEach(b => b.disabled = true);
+  try {
+    const res = await call('saveStyle', { style: k });
+    state.student.style = res.style; saved.textContent = '✓ saved';
+    toast('Saved. You’re ' + state.styles[k] + '.');
+  } catch (e) {
+    saved.textContent = prev ? '✓ saved' : '';
+    if (prev) applySkin(prev); else { setSkin(''); $('#archt').textContent = 'PICK A STYLE'; $('#arche').textContent = '✨'; $('#rad').innerHTML = radar(DEFAULT_SKIN); document.querySelectorAll('.sbtn').forEach(b => { b.classList.remove('sel'); b.setAttribute('aria-pressed', 'false'); }); }
+    toast('Couldn’t save: ' + e.message, true);
+  } finally { document.querySelectorAll('.sbtn').forEach(b => b.disabled = false); }
+}
+
+function pick(k, field, val) {
+  draft[k] = Object.assign({}, draft[k], { [field]: val });
+  const item = $('#pi-' + k);
+  item.querySelectorAll(field === 'rating' ? '.tl' : '.fq').forEach(b => { const on = b.dataset[field] === val; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  const d = draft[k]; item.classList.toggle('done', !!(d.rating && d.freq));
+  const n = draftDone(); $('#pdone').textContent = n; $('#pfill').style.width = Math.round(100 * n / ITEMS.length) + '%';
+  $('#psave').disabled = n !== ITEMS.length;
+  // nudge to the next unrated item on small screens
+  if (d.rating && d.freq) { const next = ITEMS.find(i => !(draft[i.k] && draft[i.k].rating && draft[i.k].freq)); if (next && window.innerWidth < 760) { const el = $('#pi-' + next.k); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } }
+}
+async function savePrediction() {
+  const btn = $('#psave'); btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await call('savePrediction', { checkpoint: CP, answers: draft });
+    state.student.predictions = Object.assign({}, state.student.predictions, { [CP]: res.prediction });
+    show('summary');
+  } catch (e) { btn.disabled = false; btn.textContent = 'Save my prediction'; toast('Couldn’t save: ' + e.message, true); }
+}
+const wire = (id, fn) => { const el = $('#' + id); if (el) el.addEventListener('click', fn); };
+
+function show(v) {
+  view = v;
+  const app = $('#app');
+  document.body.classList.toggle('dark', v === 'card');
+  setSkin(state.student.style);
+  if (v === 'predict') {
+    const saved = predictionSaved(); draft = saved ? JSON.parse(JSON.stringify(saved.items)) : {};
+    app.innerHTML = predictView(state);
+    app.addEventListener('click', e => { const t = e.target.closest('.tl,.fq'); if (!t) return; if (t.dataset.rating) pick(t.dataset.k, 'rating', t.dataset.rating); else pick(t.dataset.k, 'freq', t.dataset.freq); });
+    wire('psave', savePrediction); wire('toprofile', () => show('profile'));
+  } else if (v === 'summary') {
+    app.innerHTML = summaryView(state);
+    wire('toprofile', () => show('profile')); wire('topredict', () => show('predict'));
+  } else if (v === 'compare') {
+    app.innerHTML = compareView(state);
+    wire('toprofile', () => show('profile')); wire('topredict', () => show('predict'));
+  } else if (v === 'card') {
+    app.innerHTML = cardView(state);
+    $('#styles').addEventListener('click', e => { const btn = e.target.closest('.sbtn'); if (btn) choose(btn.dataset.k); });
+    $('#toprofile').addEventListener('click', () => show('profile'));
+    $('#toprofile2').addEventListener('click', () => show('profile'));
+  } else {
+    app.innerHTML = profileView(state);
+    $('#tocard').addEventListener('click', () => show('card'));
+    wire('topredict', () => show('predict')); wire('tocompare', () => show('compare'));
+    app.addEventListener('click', e => { const t = e.target.closest('[data-ov]'); if (t) openOv(t.dataset.ov); });
+  }
+  window.scrollTo(0, 0);
+}
+
+function render(b) {
+  state = b;
+  if (b.role !== 'student') { document.body.classList.remove('dark'); $('#app').innerHTML = otherView(b); wire('signout', signOut); return; }
+  show(b.student.style ? 'profile' : 'card'); // first visit goes straight to "build your card"
+}
+
+$('#ov').addEventListener('click', e => { if (e.target === e.currentTarget || e.target.closest('[data-close]')) closeOv(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeOv(); });
+
+async function boot() {
+  $('#app').innerHTML = '<div class="loading"><div class="spinner"></div>Loading your profile…</div>';
+  try { render(await call('bootstrap')); }
+  catch (e) { if (e.authRequired) return; $('#app').innerHTML = message('⚠️', 'Couldn’t load your profile', esc(e.message), '<p><a class="btn" href="javascript:location.reload()">Try again</a></p><p class="small"><button type="button" class="lnk" id="signout">Sign out</button></p>'); wire('signout', signOut); }
+}
+function main() { token = loadToken(); if (token) boot(); else showSignin(); }
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', main); else main();
+})();
+</script>
+
 </body>
 </html>
